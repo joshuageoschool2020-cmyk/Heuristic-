@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AquaHeuristic — Kerala Water Intelligence Platform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cyan:#06b6d4;--cyan-dim:#06b6d415;--cyan-border:#06b6d430;
+  --purple:#5F57FF;--purple-dim:#5F57FF15;
+  --bg:#03050a;--bg2:#060810;--bg3:#0a0d18;--bg4:#0f1220;
+  --border:#ffffff07;--border2:#ffffff10;--border3:#ffffff18;
+  --text:#e2e2f0;--text2:#888;--text3:#444;--text4:#222;
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+.nav{height:48px;background:var(--bg2);border-bottom:0.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0}
+.nav-logo{font-size:15px;font-weight:600;color:#fff}.nav-logo em{color:var(--cyan);font-style:normal}
+.nav-tag{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;background:var(--bg3);padding:2px 8px;border-radius:4px;border:0.5px solid var(--border2);margin-left:10px}
+.nav-right{display:flex;gap:8px;align-items:center}
+.nav-chip{font-size:10px;padding:3px 10px;border-radius:20px;border:0.5px solid var(--cyan-border);color:var(--cyan);background:var(--cyan-dim)}
+.live-badge{font-size:10px;padding:3px 10px;border-radius:20px;border:0.5px solid rgba(34,197,94,0.4);color:var(--green);background:rgba(34,197,94,0.1);display:flex;align-items:center;gap:5px}
+.ld{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.layout{display:flex;flex:1;overflow:hidden}
+/* SIDEBAR */
+.sb{width:52px;background:var(--bg2);border-right:0.5px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:3px;flex-shrink:0}
+.sb-btn{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;border:0.5px solid transparent;position:relative;transition:all 0.15s}
+.sb-btn:hover{background:var(--bg3)}.sb-btn.active{background:var(--cyan-dim);border-color:var(--cyan-border)}
+.sb-btn .tt{position:absolute;left:46px;background:#1a1a2e;color:var(--text);font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 0.15s;border:0.5px solid var(--border2);z-index:100}
+.sb-btn:hover .tt{opacity:1}
+.sb-div{width:24px;height:0.5px;background:var(--border2);margin:4px 0}
+/* LEFT PANEL */
+.lp{width:230px;background:var(--bg2);border-right:0.5px solid var(--border2);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.lp-sec{padding:12px;border-bottom:0.5px solid var(--border)}
+.lp-lbl{font-size:10px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px}
+.mc{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;margin-bottom:2px;border:0.5px solid transparent;transition:all 0.15s}
+.mc:hover{background:var(--bg3)}.mc.active{background:var(--cyan-dim);border-color:var(--cyan-border)}
+.mc-ic{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.mc-n{font-size:12px;font-weight:500;color:var(--text2)}.mc.active .mc-n{color:var(--text)}
+.mc-d{font-size:10px;color:var(--text3);margin-top:1px}
+.mc-b{font-size:9px;padding:2px 6px;border-radius:20px;font-weight:500;flex-shrink:0}
+/* LIVE METRICS */
+.lm{padding:10px 12px;border-bottom:0.5px solid var(--border)}
+.lm-t{font-size:10px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.lm-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+.mr{display:flex;justify-content:space-between;padding:2px 0;border-bottom:0.5px solid var(--border)}
+.mr:last-child{border-bottom:none}
+.mk{font-size:10px;color:var(--text3)}.mv{font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:500}
+/* DISTRICT LIST */
+.dl{padding:10px 12px;flex:1;overflow-y:auto}
+.dl-t{font-size:10px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px}
+.dp{display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;cursor:pointer;margin-bottom:1px;border:0.5px solid transparent;transition:all 0.12s}
+.dp:hover{background:var(--bg3)}
+.dp-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dp-n{font-size:11px;color:var(--text2);flex:1}
+.dp-bar{height:3px;border-radius:2px;overflow:hidden;width:40px;background:var(--border2)}
+.dp-fill{height:100%;border-radius:2px}
+.dp-r{font-size:10px;font-family:'JetBrains Mono',monospace}
+.lp-foot{padding:10px 12px;border-top:0.5px solid var(--border);margin-top:auto}
+.lp-btn{width:100%;padding:7px;background:var(--cyan);border:none;border-radius:7px;color:#000;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;margin-bottom:5px}
+.lp-btn2{width:100%;padding:7px;background:transparent;border:0.5px solid var(--border2);border-radius:7px;color:var(--text3);font-size:11px;cursor:pointer;font-family:'Inter',sans-serif}
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;background:var(--bg2);border-bottom:0.5px solid var(--border2);padding:0 20px;overflow-x:auto;flex-shrink:0}
+.tab{padding:11px 14px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-weight:500;border-bottom:2px solid transparent;white-space:nowrap;font-family:'Inter',sans-serif;transition:all 0.15s}
+.tab:hover{color:var(--text2)}.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+/* MESSAGES */
+.msgs{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.msgs::-webkit-scrollbar{width:3px}
+.msgs::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.msg{display:flex;gap:10px;animation:fi 0.2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.msg-u{flex-direction:row-reverse}
+.av{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.av-os{background:var(--cyan-dim);border:0.5px solid var(--cyan-border);color:var(--cyan)}
+.av-u{background:var(--bg3);border:0.5px solid var(--border2);color:var(--text2)}
+.mb{flex:1;max-width:90%}
+.msg-u .mb{display:flex;flex-direction:column;align-items:flex-end}
+.bub{background:var(--bg3);border:0.5px solid var(--border2);border-radius:2px 12px 12px 12px;padding:11px 14px;font-size:13px;line-height:1.65;color:var(--text2)}
+.msg-u .bub{background:var(--cyan-dim);border-color:var(--cyan-border);color:var(--text);border-radius:12px 2px 12px 12px}
+.mm{font-size:10px;color:var(--text4);margin-top:4px;font-family:'JetBrains Mono',monospace}
+.typing-bub{background:var(--bg3);border:0.5px solid var(--border2);border-radius:2px 12px 12px 12px;padding:10px 14px;display:inline-flex;align-items:center;gap:6px}
+.td{width:5px;height:5px;border-radius:50%;background:var(--cyan);animation:td 1.2s ease infinite}
+.td:nth-child(2){animation-delay:0.15s}.td:nth-child(3){animation-delay:0.3s}
+@keyframes td{0%,60%,100%{opacity:0.2;transform:scale(0.8)}30%{opacity:1;transform:scale(1)}}
+/* CARDS */
+.r-block{margin-top:10px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:10px;overflow:hidden}
+.r-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:0.5px solid var(--border);cursor:pointer}
+.r-hdr-l{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.r-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse 2s infinite}
+.r-body{padding:12px}
+.scores{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.sc{background:var(--bg3);border-radius:6px;padding:8px;text-align:center;border:0.5px solid var(--border)}
+.sc-v{font-size:14px;font-weight:600;font-family:'JetBrains Mono',monospace}
+.sc-k{font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:0.08em}
+.rule{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--border)}
+.rule:last-child{border-bottom:none}
+.rule-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.rule-n{font-size:11px;color:var(--text3);flex:1;font-family:'JetBrains Mono',monospace}
+.rule-d{font-size:10px;color:var(--text4);max-width:160px;text-align:right}
+.rule-w{font-size:11px;font-weight:500;font-family:'JetBrains Mono',monospace;min-width:44px;text-align:right}
+.verdict{margin-top:10px;padding:10px 12px;border-radius:8px;border:0.5px solid;font-size:12px;line-height:1.7;color:var(--text2)}
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.card{background:var(--bg3);border-radius:8px;padding:10px 12px;border:0.5px solid var(--border)}
+.card.alert{border-color:rgba(239,68,68,0.4);background:rgba(239,68,68,0.05)}
+.card.warn{border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.05)}
+.card.ok{border-color:rgba(34,197,94,0.3)}
+.card-t{font-size:11px;color:var(--text2);font-weight:500;margin-bottom:6px}
+.card-v{font-size:20px;font-weight:600;font-family:'JetBrains Mono',monospace}
+.card-u{font-size:10px;color:var(--text3);margin-top:2px}
+.card-s{font-size:10px;margin-top:5px;font-weight:500}
+.bar{height:3px;border-radius:2px;background:var(--border2);overflow:hidden;margin-top:6px}
+.bar-fill{height:100%;border-radius:2px;transition:width 0.8s ease}
+/* CHLORINE MAP */
+.cl-map{background:var(--bg3);border-radius:10px;padding:14px;border:0.5px solid var(--border);margin-top:10px;position:relative}
+.cl-canvas{width:100%;height:200px;position:relative;background:linear-gradient(135deg,#030810,#060d1a);border-radius:8px;overflow:hidden}
+.cl-node{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,0.15);transition:all 0.3s;font-family:'JetBrains Mono',monospace}
+.cl-pipe{position:absolute;height:2px;transform-origin:left center;opacity:0.6}
+.cl-legend{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
+.cl-leg{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text3)}
+.cl-leg-dot{width:10px;height:10px;border-radius:50%}
+/* INTL SOLUTIONS */
+.intl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.intl-card{background:var(--bg3);border-radius:8px;padding:12px;border:0.5px solid var(--border);border-left:3px solid}
+.intl-country{font-size:10px;font-weight:600;margin-bottom:4px;letter-spacing:0.05em}
+.intl-solution{font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500;line-height:1.4}
+.intl-detail{font-size:11px;color:var(--text3);line-height:1.6}
+.intl-result{font-size:10px;margin-top:6px;padding:4px 8px;border-radius:4px;font-weight:500}
+/* DISEASE */
+.disease-risk{background:var(--bg3);border-radius:8px;padding:12px;border:0.5px solid var(--border);margin-top:8px}
+.dr-title{font-size:11px;color:var(--text2);font-weight:500;margin-bottom:10px}
+.dr-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:11px}
+.dr-row:last-child{border-bottom:none}
+.dr-disease{color:var(--text2);width:150px}
+.dr-trigger{color:var(--text3);font-size:10px;flex:1}
+.dr-prob{font-family:'JetBrains Mono',monospace;font-weight:500;min-width:50px;text-align:right}
+.dr-bar{height:4px;border-radius:2px;background:var(--border2);overflow:hidden;width:80px}
+.dr-fill{height:100%;border-radius:2px}
+/* RETENTION */
+.ret-map{background:var(--bg3);border-radius:8px;padding:12px;border:0.5px solid rgba(6,182,212,0.3);margin-top:8px}
+/* ALERT */
+.alert-box{background:rgba(239,68,68,0.08);border:0.5px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px;margin-top:8px}
+.alert-title{font-size:11px;color:var(--red);font-weight:500;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.alert-pulse{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 1s infinite}
+.alert-sms{background:var(--bg3);border-radius:6px;padding:10px;font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;line-height:1.8;margin-top:8px;border:0.5px solid var(--border2)}
+/* CHIPS */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{padding:5px 10px;border-radius:20px;border:0.5px solid var(--border2);background:var(--bg3);font-size:11px;color:var(--text3);cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.chip:hover{border-color:var(--cyan-border);color:var(--cyan);background:var(--cyan-dim)}
+/* Q CARD */
+.qc{background:var(--bg3);border:0.5px solid var(--cyan-border);border-radius:10px;padding:12px 14px;margin-top:6px}
+.qc-l{font-size:10px;color:var(--cyan);font-family:'JetBrains Mono',monospace;margin-bottom:6px}
+.qc-q{font-size:13px;color:var(--text);margin-bottom:10px;line-height:1.5}
+.qc-opts{display:flex;gap:6px;flex-wrap:wrap}
+.qopt{padding:5px 12px;border-radius:20px;border:0.5px solid var(--border2);background:var(--bg2);font-size:11px;color:var(--text2);cursor:pointer;transition:all 0.15s}
+.qopt:hover{border-color:var(--cyan-border);color:var(--cyan);background:var(--cyan-dim)}
+.qopt.sel{border-color:var(--cyan);color:#000;background:var(--cyan)}
+/* INPUT */
+.inp-area{padding:14px 20px;border-top:0.5px solid var(--border);background:var(--bg2);flex-shrink:0}
+.inp-wrap{display:flex;align-items:flex-end;gap:8px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:12px;padding:10px 12px;transition:border-color 0.15s}
+.inp-wrap:focus-within{border-color:var(--cyan-border)}
+.inp-inner{flex:1}
+.inp-mode{font-size:10px;color:var(--cyan);font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+textarea.ti{width:100%;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);font-family:'Inter',sans-serif;resize:none;max-height:100px;line-height:1.5}
+textarea.ti::placeholder{color:var(--text4)}
+.send{width:32px;height:32px;border-radius:8px;background:var(--cyan);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.send svg{width:13px;height:13px;fill:#000}
+.inp-foot{display:flex;align-items:center;justify-content:space-between;margin-top:7px}
+.if-acts{display:flex;gap:10px}
+.if-a{font-size:10px;color:var(--text4);cursor:pointer}
+.if-a:hover{color:var(--text2)}
+.if-b{font-size:10px;color:var(--text4);font-family:'JetBrains Mono',monospace}
+</style>
+</head>
+<body>
+<div class="nav">
+  <div style="display:flex;align-items:center">
+    <div class="nav-logo">Aqua<em>Heuristic</em></div>
+    <div class="nav-tag">Kerala Water Intelligence · v2.0 · World's First</div>
+  </div>
+  <div class="nav-right">
+    <span class="live-badge"><div class="ld"></div>14 districts live</span>
+    <span class="nav-chip">WDE Hackathon 2026</span>
+    <span class="nav-chip" style="border-color:rgba(139,92,246,0.4);color:#8b5cf6;background:rgba(139,92,246,0.1)">Explainable AI</span>
+  </div>
+</div>
+<div class="layout">
+  <div class="sb">
+    <div class="sb-btn active" onclick="ST('risk')">💧<span class="tt">Water Risk</span></div>
+    <div class="sb-btn" onclick="ST('chlorine')">🗺️<span class="tt">Chlorine Map</span></div>
+    <div class="sb-btn" onclick="ST('sensors')">📡<span class="tt">Live Sensors</span></div>
+    <div class="sb-btn" onclick="ST('disease')">🧬<span class="tt">Disease Prediction</span></div>
+    <div class="sb-btn" onclick="ST('dam')">🏞️<span class="tt">AI Dam Control</span></div>
+    <div class="sb-btn" onclick="ST('pipes')">🔧<span class="tt">Pipe Health</span></div>
+    <div class="sb-btn" onclick="ST('satellite')">🛰️<span class="tt">Satellite</span></div>
+    <div class="sb-btn" onclick="ST('redist')">🔄<span class="tt">Redistribution</span></div>
+    <div class="sb-btn" onclick="ST('intl')">🌍<span class="tt">Global Solutions</span></div>
+    <div class="sb-btn" onclick="ST('retention')">💦<span class="tt">Rainfall Retention</span></div>
+    <div class="sb-div"></div>
+    <div class="sb-btn" onclick="ST('alerts')">🚨<span class="tt">Emergency Alerts</span></div>
+    <div class="sb-btn" onclick="resetAll()">🗑️<span class="tt">Clear</span></div>
+  </div>
+  <div class="lp">
+    <div class="lp-sec">
+      <div class="lp-lbl">modules</div>
+      <div class="mc active" onclick="ST('risk')"><div class="mc-ic" style="background:#06b6d420;color:#06b6d4">💧</div><div><div class="mc-n">water risk</div><div class="mc-d">18 rules · WHO</div></div><div class="mc-b" style="background:#06b6d420;color:#06b6d4">AI</div></div>
+      <div class="mc" onclick="ST('chlorine')"><div class="mc-ic" style="background:#22c55e20;color:#22c55e">🗺️</div><div><div class="mc-n">chlorine map</div><div class="mc-d">distribution live</div></div><div class="mc-b" style="background:#22c55e20;color:#22c55e">live</div></div>
+      <div class="mc" onclick="ST('disease')"><div class="mc-ic" style="background:#ef444420;color:#ef4444">🧬</div><div><div class="mc-n">disease predict</div><div class="mc-d">outbreak AI</div></div><div class="mc-b" style="background:#ef444420;color:#ef4444">predict</div></div>
+      <div class="mc" onclick="ST('intl')"><div class="mc-ic" style="background:#8b5cf620;color:#8b5cf6">🌍</div><div><div class="mc-n">global solutions</div><div class="mc-d">world best practice</div></div><div class="mc-b" style="background:#8b5cf620;color:#8b5cf6">intl</div></div>
+      <div class="mc" onclick="ST('dam')"><div class="mc-ic" style="background:#f59e0b20;color:#f59e0b">🏞️</div><div><div class="mc-n">AI dam control</div><div class="mc-d">flow regulation</div></div><div class="mc-b" style="background:#f59e0b20;color:#f59e0b">smart</div></div>
+      <div class="mc" onclick="ST('pipes')"><div class="mc-ic" style="background:#ef444420;color:#ef4444">🔧</div><div><div class="mc-n">pipe health</div><div class="mc-d">leak detection</div></div><div class="mc-b" style="background:#ef444420;color:#ef4444">scan</div></div>
+      <div class="mc" onclick="ST('retention')"><div class="mc-ic" style="background:#06b6d420;color:#06b6d4">💦</div><div><div class="mc-n">rainfall retain</div><div class="mc-d">stop sea loss</div></div><div class="mc-b" style="background:#3b82f620;color:#3b82f6">new</div></div>
+      <div class="mc" onclick="ST('alerts')"><div class="mc-ic" style="background:#ef444420;color:#ef4444">🚨</div><div><div class="mc-n">emergency alerts</div><div class="mc-d">SMS + panchayat</div></div><div class="mc-b" style="background:#ef444420;color:#ef4444">live</div></div>
+    </div>
+    <div class="lm">
+      <div class="lm-t"><div class="lm-dot"></div>Kerala Live</div>
+      <div class="mr"><span class="mk">Drought wards</span><span class="mv" style="color:var(--red)">2,567</span></div>
+      <div class="mr"><span class="mk">Wells contaminated</span><span class="mv" style="color:var(--amber)">50%</span></div>
+      <div class="mr"><span class="mk">Rainfall to sea</span><span class="mv" style="color:var(--amber)">76%</span></div>
+      <div class="mr"><span class="mk">Active sensors</span><span class="mv" style="color:var(--green)">847</span></div>
+      <div class="mr"><span class="mk">Pipe leaks</span><span class="mv" style="color:var(--red)">23</span></div>
+      <div class="mr"><span class="mk">Chlorine alerts</span><span class="mv" style="color:var(--red)">6</span></div>
+    </div>
+    <div class="dl">
+      <div class="dl-t">district risk</div>
+      <div id="dlist"></div>
+    </div>
+    <div class="lp-foot">
+      <button class="lp-btn" onclick="window.open('https://heuristic-eta.vercel.app/')">heuristic app →</button>
+      <button class="lp-btn2" onclick="ST('intl')">🌍 global solutions</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="tabs">
+      <button class="tab active" onclick="ST('risk')">💧 Risk</button>
+      <button class="tab" onclick="ST('chlorine')">🗺️ Chlorine Map</button>
+      <button class="tab" onclick="ST('sensors')">📡 Sensors</button>
+      <button class="tab" onclick="ST('disease')">🧬 Disease</button>
+      <button class="tab" onclick="ST('dam')">🏞️ Dam AI</button>
+      <button class="tab" onclick="ST('pipes')">🔧 Pipes</button>
+      <button class="tab" onclick="ST('satellite')">🛰️ Satellite</button>
+      <button class="tab" onclick="ST('redist')">🔄 Redistrib</button>
+      <button class="tab" onclick="ST('intl')">🌍 Global</button>
+      <button class="tab" onclick="ST('retention')">💦 Retention</button>
+      <button class="tab" onclick="ST('alerts')">🚨 Alerts</button>
+    </div>
+    <div class="content">
+      <div class="msgs" id="msgs"></div>
+      <div class="inp-area">
+        <div class="inp-wrap">
+          <div class="inp-inner">
+            <div class="inp-mode" id="inp-mode">// aquaheuristic · 10 modules · 18 rules · world's first explainable water AI</div>
+            <textarea class="ti" id="inp" placeholder="Ask anything — district risk, chlorine levels, disease prediction, dam release, pipe health, global solutions..." rows="1" onkeydown="HK(event)" oninput="AR(this)"></textarea>
+          </div>
+          <button class="send" onclick="send()"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
+        </div>
+        <div class="inp-foot">
+          <div class="if-acts">
+            <span class="if-a" onclick="showEg()">💡 examples</span>
+            <span class="if-a" onclick="ST('chlorine')">🗺️ chlorine map</span>
+            <span class="if-a" onclick="ST('disease')">🧬 disease predict</span>
+            <span class="if-a" onclick="ST('intl')">🌍 global solutions</span>
+            <span class="if-a" onclick="ST('alerts')">🚨 alerts</span>
+          </div>
+          <span class="if-b">aquaheuristic · obliquity_ · WDE Kerala 2026</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+// ═══ KERALA DATA ═══
+const D={
+  kasaragode:{n:'Kasaragode',risk:0.85,drought:true,endosulfan:true,salinity:true,dam:'Bekal',dl:45,tests:50,pipes:'critical',issues:['endosulfan','fluoride','arsenic','salinity'],lat:12.5,lon:74.9,chlorine:0.04,ph:6.1,fluoride:2.1,turbidity:18,nitrates:62,coliform:4},
+  alappuzha:{n:'Alappuzha',risk:0.78,drought:false,backwater:true,salinity:true,dam:'None',dl:0,tests:69,pipes:'fair',issues:['backwater','algal bloom','salinity','sewage'],lat:9.4,lon:76.3,chlorine:0.08,ph:8.9,fluoride:0.4,turbidity:14,nitrates:28,coliform:12},
+  wayanad:{n:'Wayanad',risk:0.75,drought:true,tribal:true,dam:'Banasura Sagar',dl:82,tests:69,pipes:'poor',issues:['pesticides','turbidity','scarcity','iron'],lat:11.6,lon:76.0,chlorine:0.11,ph:6.4,fluoride:0.8,turbidity:22,nitrates:18,coliform:2},
+  palakkad:{n:'Palakkad',risk:0.72,drought:true,agricultural:true,dam:'Malampuzha',dl:58,tests:79,pipes:'aging',issues:['fluoride','nitrates','agricultural','drought'],lat:10.7,lon:76.6,chlorine:0.15,ph:7.1,fluoride:1.9,turbidity:6,nitrates:58,coliform:0},
+  kollam:{n:'Kollam',risk:0.65,industrial:true,salinity:true,dam:'Kallada',dl:71,tests:37,pipes:'fair',issues:['industrial','cashew waste','backwater','salinity'],lat:8.9,lon:76.6,chlorine:0.12,ph:7.4,fluoride:0.6,turbidity:8,nitrates:42,coliform:3},
+  kozhikkode:{n:'Kozhikkode',risk:0.62,urban:true,dam:'Iruvanjipuzha',dl:64,tests:100,pipes:'aging',issues:['urban sewage','industrial','coliform','Kallai river'],lat:11.2,lon:75.8,chlorine:0.09,ph:7.2,fluoride:0.5,turbidity:11,nitrates:35,coliform:8},
+  malappuram:{n:'Malappuram',risk:0.60,drought:true,agricultural:true,dam:'Karapuzha',dl:55,tests:140,pipes:'fair',issues:['fluoride','iron','limestone','scarcity'],lat:11.0,lon:76.1,chlorine:0.14,ph:6.8,fluoride:1.4,turbidity:5,nitrates:48,coliform:1},
+  thiruvananthapuram:{n:'Thiruvananthapuram',risk:0.55,drought:true,coastal:true,dam:'Peppara',dl:61,tests:68,pipes:'aging',issues:['coastal salinity','fluoride','iron','urban runoff'],lat:8.5,lon:77.0,chlorine:0.18,ph:7.3,fluoride:1.1,turbidity:4,nitrates:32,coliform:0},
+  thrissur:{n:'Thrissur',risk:0.52,agricultural:true,dam:'Peechi',dl:74,tests:139,pipes:'good',issues:['chemicals','fluoride','iron','nitrates'],lat:10.5,lon:76.2,chlorine:0.22,ph:7.5,fluoride:0.9,turbidity:3,nitrates:38,coliform:0},
+  idukki:{n:'Idukki',risk:0.48,highland:true,dam:'Idukki Arch',dl:89,tests:56,pipes:'good',issues:['pesticides','cardamom runoff','iron'],lat:9.8,lon:77.0,chlorine:0.28,ph:7.1,fluoride:0.3,turbidity:2,nitrates:14,coliform:0},
+  pathanamthitta:{n:'Pathanamthitta',risk:0.45,agricultural:true,dam:'Kakki',dl:77,tests:39,pipes:'fair',issues:['runoff','pesticides','iron','borewells'],lat:9.2,lon:76.8,chlorine:0.24,ph:7.2,fluoride:0.4,turbidity:2,nitrates:22,coliform:0},
+  kottayam:{n:'Kottayam',risk:0.42,rubber:true,dam:'Ponmudi',dl:68,tests:96,pipes:'good',issues:['rubber runoff','tannery','iron'],lat:9.6,lon:76.5,chlorine:0.26,ph:7.4,fluoride:0.3,turbidity:2,nitrates:18,coliform:0},
+  kannur:{n:'Kannur',risk:0.40,coastal:true,dam:'Peruvannamuzhi',dl:72,tests:135,pipes:'good',issues:['cashew industry','salinity','iron','coliform'],lat:11.8,lon:75.4,chlorine:0.25,ph:7.3,fluoride:0.4,turbidity:3,nitrates:16,coliform:1},
+  ernakulam:{n:'Ernakulam',risk:0.38,urban:true,dam:'Bhoothathankettu',dl:65,tests:0,pipes:'critical',issues:['urban runoff','Periyar','sewage','old pipes'],lat:9.9,lon:76.3,chlorine:0.19,ph:7.6,fluoride:0.5,turbidity:5,nitrates:28,coliform:2},
+};
+const WHO={ph:{min:6.5,max:8.5},turbidity:{max:4},fluoride:{max:1.0},nitrates:{max:45},chlorine:{min:0.2,max:1.0},coliform:{max:0}};
+let curTab='risk';
+let isT=false;
+
+// ═══ RENDER DISTRICTS ═══
+function renderDistricts(){
+  const sorted=Object.values(D).sort((a,b)=>b.risk-a.risk);
+  document.getElementById('dlist').innerHTML=sorted.map(d=>{
+    const c=d.risk>0.65?'var(--red)':d.risk>0.45?'var(--amber)':'var(--green)';
+    return `<div class="dp" onclick="AD('${d.n}')"><div class="dp-dot" style="background:${c}"></div><div class="dp-n">${d.n}</div><div class="dp-bar"><div class="dp-fill" style="width:${d.risk*100}%;background:${c}"></div></div><div class="dp-r" style="color:${c}">${(d.risk*100).toFixed(0)}%</div></div>`;
+  }).join('');
+}
+
+// ═══ TAB SWITCH ═══
+function ST(tab){
+  curTab=tab;
+  const tabs=['risk','chlorine','sensors','disease','dam','pipes','satellite','redist','intl','retention','alerts'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===tab));
+  document.querySelectorAll('.mc').forEach((m,i)=>m.classList.toggle('active',['risk','chlorine','disease','intl','dam','pipes','retention','alerts'][i]===tab));
+  document.querySelectorAll('.sb-btn').forEach((b,i)=>b.classList.toggle('active',['risk','chlorine','sensors','disease','dam','pipes','satellite','redist','intl','retention','alerts'][i]===tab));
+  const modes={risk:'// water_risk_engine · 18 rules · WHO IS:10500 + Kerala standards',chlorine:'// chlorine_distribution_map · real-time · treatment→pipe→tap',sensors:'// sensor_network · 847 IoT devices · treatment+source+pipes+borewells',disease:'// disease_prediction_engine · water→pathogen→outbreak correlation',dam:'// ai_dam_control · Idukki+Kakki+Malampuzha · surplus routing',pipes:'// pipe_health_scanner · pressure+flow+age+material analysis',satellite:'// satellite_intelligence · ISRO Bhuvan+Sentinel-2 · water body AI',redist:'// water_redistribution_ai · drought→surplus routing · 3 active',intl:'// global_solutions_engine · Singapore+Israel+Netherlands+Japan+Germany',retention:'// rainfall_retention_ai · 76% loss → storage optimization',alerts:'// emergency_alert_system · SMS+panchayat+district collector'};
+  document.getElementById('inp-mode').textContent=modes[tab]||modes.risk;
+  if(tab==='chlorine')showChlorine();
+  else if(tab==='sensors')showSensors();
+  else if(tab==='disease')showDisease();
+  else if(tab==='dam')showDam();
+  else if(tab==='pipes')showPipes();
+  else if(tab==='satellite')showSatellite();
+  else if(tab==='redist')showRedist();
+  else if(tab==='intl')showIntl();
+  else if(tab==='retention')showRetention();
+  else if(tab==='alerts')showAlerts();
+}
+
+// ═══ MESSAGING ═══
+function addMsg(html){
+  const msgs=document.getElementById('msgs');
+  const w=document.getElementById('welcome');if(w)w.remove();
+  const div=document.createElement('div');div.className='msg';
+  div.innerHTML=`<div class="av av-os">A</div><div class="mb"><div class="bub">${html}</div><div class="mm">${now()} · aquaheuristic</div></div>`;
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+}
+function addU(text){
+  const msgs=document.getElementById('msgs');
+  const div=document.createElement('div');div.className='msg msg-u';
+  div.innerHTML=`<div class="av av-u">U</div><div class="mb"><div class="bub">${text}</div><div class="mm">${now()} · you</div></div>`;
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+}
+function showT(){
+  const msgs=document.getElementById('msgs');
+  const div=document.createElement('div');div.className='msg';div.id='typing';
+  div.innerHTML=`<div class="av av-os">A</div><div class="mb"><div class="typing-bub"><div class="td"></div><div class="td"></div><div class="td"></div><span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">processing...</span></div></div>`;
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+}
+function hideT(){const t=document.getElementById('typing');if(t)t.remove();}
+function now(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+
+// ═══ SEND ═══
+async function send(){
+  const inp=document.getElementById('inp');
+  const text=inp.value.trim();
+  if(!text||isT)return;
+  isT=true;addU(text);inp.value='';inp.style.height='auto';
+  const t=text.toLowerCase();
+  showT();await sl(600+Math.random()*400);hideT();
+  if(/chlorine|cl2|distribution map/i.test(t)){ST('chlorine');showChlorine();}
+  else if(/sensor|iot|treatment plant|borewell/i.test(t)){ST('sensors');showSensors();}
+  else if(/disease|outbreak|cholera|typhoid|fluorosis|pathogen/i.test(t)){ST('disease');showDisease();}
+  else if(/dam|reservoir|release|flood|idukki|kakki/i.test(t)){ST('dam');showDam();}
+  else if(/pipe|leak|pressure|replace/i.test(t)){ST('pipes');showPipes();}
+  else if(/satellite|isro|bhuvan|space/i.test(t)){ST('satellite');showSatellite();}
+  else if(/redistri|route|surplus|send water/i.test(t)){ST('redist');showRedist();}
+  else if(/global|international|singapore|israel|netherlands|japan|germany|solution/i.test(t)){ST('intl');showIntl();}
+  else if(/retention|rainfall|sea|store/i.test(t)){ST('retention');showRetention();}
+  else if(/alert|sms|emergency|panchayat/i.test(t)){ST('alerts');showAlerts();}
+  else{AD(findDistrict(t)||'Kasaragode');}
+  isT=false;
+}
+function findDistrict(t){return Object.keys(D).find(k=>t.includes(k)||t.includes(D[k].n.toLowerCase()));}
+
+// ═══ WATER RISK ENGINE ═══
+function AD(dName){
+  const key=Object.keys(D).find(k=>D[k].n===dName||k===dName.toLowerCase());
+  const d=D[key]||D.kasaragode;
+  const rules=[
+    {n:'baseline risk > 60%',f:d.risk>0.60,w:0.12,det:`baseline: ${(d.risk*100).toFixed(0)}%`,imp:'Historical contamination pattern'},
+    {n:'endosulfan legacy zone',f:!!d.endosulfan,w:0.12,det:'Kasaragode endosulfan',imp:'Decades of groundwater contamination'},
+    {n:'backwater/salinity intrusion',f:!!d.salinity||!!d.backwater,w:0.10,det:'coastal/backwater district',imp:'Seawater intrusion increasing'},
+    {n:'drought-hit district',f:!!d.drought,w:0.10,det:'drought ward confirmed',imp:'Unsafe source use during scarcity'},
+    {n:'fluoride > WHO 1.0 mg/L',f:d.fluoride>1.0,w:0.10,det:`fluoride: ${d.fluoride}mg/L`,imp:'Dental/skeletal fluorosis risk'},
+    {n:'turbidity > 4 NTU',f:d.turbidity>4,w:0.08,det:`turbidity: ${d.turbidity}NTU`,imp:'Pathogens in suspension'},
+    {n:'chlorine residual < 0.2 mg/L',f:d.chlorine<0.2,w:0.10,det:`Cl₂: ${d.chlorine}mg/L (min:0.2)`,imp:'No disinfection — bacteria active'},
+    {n:'nitrates > 45 mg/L',f:d.nitrates>45,w:0.07,det:`nitrates: ${d.nitrates}mg/L`,imp:'Agricultural runoff — infant risk'},
+    {n:'coliform bacteria detected',f:d.coliform>0,w:0.10,det:`coliform: ${d.coliform} CFU/100mL`,imp:'Faecal contamination — immediate risk'},
+    {n:'pH outside 6.5-8.5 range',f:d.ph<6.5||d.ph>8.5,w:0.06,det:`pH: ${d.ph}`,imp:'Acidic/alkaline — health risk'},
+    {n:'industrial contamination',f:!!d.industrial,w:0.08,det:'industrial zone',imp:'Effluent discharge'},
+    {n:'low monitoring frequency',f:d.tests<60,w:0.05,det:`${d.tests} tests/month`,imp:'Detection gaps'},
+    {n:'critical pipe infrastructure',f:d.pipes==='critical'||d.pipes==='poor',w:0.06,det:`pipes: ${d.pipes}`,imp:'Pipe-induced contamination'},
+    {n:'dam level below 60%',f:d.dl<60,w:0.04,det:`dam: ${d.dl}%`,imp:'Increased groundwater pressure'},
+  ];
+  const score=rules.reduce((s,r)=>s+(r.f?r.w:0),0);
+  const level=score>0.55?'HIGH RISK':score>0.35?'MODERATE RISK':'LOW RISK';
+  const color=score>0.55?'var(--red)':score>0.35?'var(--amber)':'var(--green)';
+  const conf=Math.min(94,Math.round(score/0.85*100));
+  const fired=rules.filter(r=>r.f).length;
+  const rulesHTML=rules.map(r=>`<div class="rule"><div class="rule-dot" style="background:${r.f?color:'var(--text4)'}"></div><div class="rule-n">${r.f?'✓':'✗'} ${r.n}</div><div class="rule-d">${r.det}</div><div class="rule-w" style="color:${r.f?color:'var(--text4)'}">${r.f?'+':''}${r.w.toFixed(2)}</div></div>`).join('');
+  const vBg=score>0.55?'rgba(239,68,68,0.08)':score>0.35?'rgba(245,158,11,0.08)':'rgba(34,197,94,0.08)';
+  const vBorder=score>0.55?'rgba(239,68,68,0.25)':score>0.35?'rgba(245,158,11,0.25)':'rgba(34,197,94,0.25)';
+  const issues=d.issues.map(i=>`<span class="chip" style="border-color:var(--cyan-border);color:var(--cyan)">${i}</span>`).join('');
+  const recs=score>0.55?['DO NOT consume without treatment','Boil water 5+ minutes','Call KWA: 1800-425-1003','Emergency filter deployment','Activate redistribution']:score>0.35?['Boil before drinking','Monthly testing','Check pipe pressure','Prefer KWA supply']:['3-monthly testing','Maintain infrastructure','Monitor monsoon season'];
+  const chips=['What international solution fits?','Show chlorine map','Predict disease risk','Can water be rerouted here?','Show global best practice'].map(f=>`<span class="chip" onclick="UE('${f} ${d.n}')">${f}</span>`).join('');
+  addMsg(`<strong>💧 ${d.n} — Water Intelligence Report</strong><br><span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">KWA: ${d.tests}/mo · Dam: ${d.dam} (${d.dl}%) · Pipes: ${d.pipes} · Chlorine: ${d.chlorine}mg/L</span>
+  <div class="r-block"><div class="r-hdr" onclick="TB(this)"><div class="r-hdr-l"><div class="r-dot"></div>risk trace · ${fired}/${rules.length} rules · confidence ${conf}%</div><div style="font-size:10px;color:var(--text4)">▼</div></div><div class="r-body">
+  <div class="scores"><div class="sc"><div class="sc-v" style="color:${color}">${score.toFixed(2)}</div><div class="sc-k">score</div></div><div class="sc"><div class="sc-v" style="color:var(--text2)">${fired}/${rules.length}</div><div class="sc-k">fired</div></div><div class="sc"><div class="sc-v" style="color:var(--cyan)">${conf}%</div><div class="sc-k">confidence</div></div><div class="sc"><div class="sc-v" style="color:${color};font-size:10px;padding-top:4px">${level.split(' ')[0]}</div><div class="sc-k">verdict</div></div></div>
+  ${rulesHTML}
+  <div class="verdict" style="background:${vBg};border-color:${vBorder}"><strong>${d.n}: ${level}</strong> — Score ${score.toFixed(2)}. Primary: ${d.issues[0]}, ${d.issues[1]}. ${score>0.55?'Immediate action required.':score>0.35?'Preventive action needed.':'Continue monitoring.'}</div>
+  <div style="margin-top:8px"><div style="font-size:10px;color:var(--text3);margin-bottom:5px">known issues</div><div style="display:flex;gap:5px;flex-wrap:wrap">${issues}</div></div>
+  <div style="margin-top:8px;padding:8px 12px;background:var(--bg3);border-radius:6px;border:0.5px solid var(--border2)">${recs.map(r=>`<div style="font-size:12px;color:var(--text2);padding:2px 0;display:flex;gap:6px"><span style="color:var(--cyan)">→</span>${r}</div>`).join('')}</div>
+  <div style="margin-top:6px;padding:6px 10px;background:var(--bg3);border-radius:6px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">score=Σ(w_i×r_i)=<span style="color:var(--cyan)">${score.toFixed(4)}</span> · verdict=<span style="color:${color}">${level}</span></div>
+  </div></div><div class="chips">${chips}</div>`);
+}
+
+// ═══ CHLORINE DISTRIBUTION MAP ═══
+function showChlorine(){
+  const sorted=Object.values(D).sort((a,b)=>b.risk-a.risk);
+  const nodes=sorted.map(d=>{
+    const c=d.chlorine>=0.2?'var(--green)':d.chlorine>=0.1?'var(--amber)':'var(--red)';
+    const x=((d.lon-74.5)/3.0)*100;
+    const y=((12.8-d.lat)/5.0)*100;
+    const clStatus=d.chlorine<0.2?'UNSAFE':d.chlorine>0.8?'HIGH':'OK';
+    return `<div class="cl-node" style="left:${Math.min(88,Math.max(4,x))}%;top:${Math.min(88,Math.max(4,y))}%;width:36px;height:36px;background:${c}30;border-color:${c};" onclick="AD('${d.n}')" title="${d.n}: Cl₂=${d.chlorine}mg/L"><span style="color:${c};font-size:8px;text-align:center;line-height:1.2">${d.n.substring(0,4)}<br>${d.chlorine}</span></div>`;
+  }).join('');
+
+  const tableRows=sorted.map(d=>{
+    const cl=d.chlorine; const ph=d.ph; const flu=d.fluoride; const tur=d.turbidity; const nit=d.nitrates; const col=d.coliform;
+    const clC=cl>=0.2?'var(--green)':cl>=0.1?'var(--amber)':'var(--red)';
+    const phC=(ph>=6.5&&ph<=8.5)?'var(--green)':'var(--red)';
+    const fluC=flu<=1.0?'var(--green)':flu<=1.5?'var(--amber)':'var(--red)';
+    const turC=tur<=4?'var(--green)':tur<=10?'var(--amber)':'var(--red)';
+    const nitC=nit<=45?'var(--green)':nit<=60?'var(--amber)':'var(--red)';
+    const colC=col===0?'var(--green)':col<=5?'var(--amber)':'var(--red)';
+    return `<div style="display:grid;grid-template-columns:120px repeat(6,1fr);gap:4px;padding:4px 0;border-bottom:0.5px solid var(--border);font-size:11px;font-family:'JetBrains Mono',monospace">
+      <div style="color:var(--text2)">${d.n}</div>
+      <div style="color:${clC};text-align:center">${cl}</div>
+      <div style="color:${phC};text-align:center">${ph}</div>
+      <div style="color:${fluC};text-align:center">${flu}</div>
+      <div style="color:${turC};text-align:center">${tur}</div>
+      <div style="color:${nitC};text-align:center">${nit}</div>
+      <div style="color:${colC};text-align:center">${col}</div>
+    </div>`;
+  }).join('');
+
+  addMsg(`<strong>🗺️ Kerala Chlorine & Water Quality Distribution Map</strong><br>
+  <span style="font-size:11px;color:var(--text3)">Real-time chlorine residual · WHO IS:10500 thresholds · Click district to analyse</span>
+  <div class="cl-map" style="margin-top:8px">
+    <div style="font-size:11px;color:var(--text2);font-weight:500;margin-bottom:8px">Kerala District Water Quality Map <span style="color:var(--text3);font-size:10px">(chlorine residual mg/L)</span></div>
+    <div class="cl-canvas" id="cl-canvas">${nodes}</div>
+    <div class="cl-legend" style="margin-top:8px">
+      <div class="cl-leg"><div class="cl-leg-dot" style="background:var(--green)"></div>Safe Cl₂ ≥0.2 mg/L</div>
+      <div class="cl-leg"><div class="cl-leg-dot" style="background:var(--amber)"></div>Low Cl₂ 0.1-0.2 mg/L</div>
+      <div class="cl-leg"><div class="cl-leg-dot" style="background:var(--red)"></div>Unsafe Cl₂ &lt;0.1 mg/L</div>
+    </div>
+  </div>
+  <div style="margin-top:12px">
+    <div style="font-size:11px;color:var(--text2);font-weight:500;margin-bottom:8px">📊 Full Parameter Table — All 14 Districts</div>
+    <div style="display:grid;grid-template-columns:120px repeat(6,1fr);gap:4px;padding:4px 0;border-bottom:0.5px solid var(--border2);font-size:10px;color:var(--text3)">
+      <div>District</div><div style="text-align:center">Cl₂<br>mg/L</div><div style="text-align:center">pH</div><div style="text-align:center">F⁻<br>mg/L</div><div style="text-align:center">Turb<br>NTU</div><div style="text-align:center">NO₃<br>mg/L</div><div style="text-align:center">Coli<br>CFU</div>
+    </div>
+    ${tableRows}
+    <div style="margin-top:6px;font-size:10px;color:var(--text3)">WHO limits: Cl₂ 0.2-1.0 · pH 6.5-8.5 · F⁻ ≤1.0 · Turbidity ≤4 · NO₃ ≤45 · Coliform 0</div>
+  </div>
+  <div style="margin-top:10px;padding:10px 12px;background:rgba(239,68,68,0.08);border-radius:8px;border:0.5px solid rgba(239,68,68,0.25)">
+    <div style="font-size:11px;color:var(--red);font-weight:500;margin-bottom:6px">🔴 Critical Chlorine Failures</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.8">
+      <strong>Kasaragode (0.04 mg/L)</strong> — 80% below WHO minimum. No disinfection reaching households.<br>
+      <strong>Alappuzha (0.08 mg/L)</strong> — Backwater diluting chlorine. Coliform: 12 CFU/100mL detected.<br>
+      <strong>Wayanad (0.11 mg/L)</strong> — Remote pipelines losing chlorine over distance.<br>
+      <strong>Kozhikkode (0.09 mg/L)</strong> — 42-year-old pipes consuming chlorine through corrosion reaction.
+    </div>
+  </div>
+  <div class="chips"><span class="chip" onclick="ST('disease')">🧬 Predict disease from these readings</span><span class="chip" onclick="ST('intl')">🌍 How Singapore solved this</span><span class="chip" onclick="ST('alerts')">🚨 Generate SMS alerts</span></div>`);
+}
+
+// ═══ SENSORS ═══
+function showSensors(){
+  const sensors=[
+    {n:'Treatment Plant Output',ic:'🏭',status:'ok',params:[{n:'pH',v:7.2,min:6.5,max:8.5,u:''},{n:'Turbidity',v:1.8,max:4,u:'NTU'},{n:'Chlorine',v:0.45,min:0.2,max:1.0,u:'mg/L'},{n:'Coliform',v:0,max:0,u:'CFU'},{n:'Flow',v:450,u:'MLD'}]},
+    {n:'Source Water — Kallai River',ic:'🌊',status:'alert',params:[{n:'pH',v:6.1,min:6.5,u:''},{n:'Turbidity',v:18.4,max:4,u:'NTU'},{n:'Iron',v:0.8,max:0.3,u:'mg/L'},{n:'Nitrates',v:52,max:45,u:'mg/L'},{n:'Flow',v:820,u:'MLD'}]},
+    {n:'Distribution Network Pipes',ic:'🔧',status:'warn',params:[{n:'Pressure',v:2.1,min:1.5,max:4.0,u:'bar'},{n:'Flow Loss',v:34,max:20,u:'%'},{n:'pH Change',v:0.8,max:0.3,u:'ΔpH'},{n:'Cl₂ Residual',v:0.05,min:0.2,u:'mg/L'}]},
+    {n:'Rural Borewell Network',ic:'⛏️',status:'critical',params:[{n:'pH',v:6.8,min:6.5,u:''},{n:'Fluoride',v:1.8,max:1.0,u:'mg/L'},{n:'Iron',v:1.2,max:0.3,u:'mg/L'},{n:'TDS',v:680,max:500,u:'mg/L'}]},
+    {n:'Backwater Monitor — Alappuzha',ic:'🚤',status:'critical',params:[{n:'Salinity',v:8.4,max:2.0,u:'ppt'},{n:'Turbidity',v:12.1,max:4,u:'NTU'},{n:'Algae Index',v:0.74,max:0.3,u:''},{n:'pH',v:8.9,max:8.5,u:''}]},
+    {n:'Rainfall & Runoff Monitor',ic:'🌧️',status:'warn',params:[{n:'Rainfall',v:284,u:'mm/mo'},{n:'Sea Runoff',v:76,max:30,u:'%'},{n:'GW Recharge',v:12,u:'%'},{n:'Stored',v:12,u:'%'}]},
+  ];
+  const sColors={ok:'var(--green)',alert:'var(--red)',warn:'var(--amber)',critical:'var(--red)'};
+  sensors.forEach(s=>{
+    const cards=s.params.map(p=>{
+      const v=p.v;const over=p.max&&v>p.max;const under=p.min&&v<p.min;
+      const st=over||under?'alert':'ok';
+      const c=over?'var(--red)':under?'var(--amber)':'var(--green)';
+      const pct=p.max?Math.min(100,(v/p.max)*80):50;
+      return `<div class="card ${st==='alert'?'alert':'ok'}"><div class="card-t">${p.n}</div><div class="card-v" style="color:${c}">${v}</div><div class="card-u">${p.u}</div><div class="bar"><div class="bar-fill" style="width:${pct}%;background:${c}"></div></div><div class="card-s" style="color:${c}">${over?`⚠ Over limit (${p.max}${p.u})`:under?`⚠ Below min (${p.min}${p.u})`:'✓ Normal'}</div></div>`;
+    }).join('');
+    addMsg(`<strong>${s.ic} ${s.n}</strong> <span style="color:${sColors[s.status]};font-size:11px;font-family:'JetBrains Mono',monospace">● ${s.status.toUpperCase()}</span><div class="g3" style="margin-top:8px">${cards}</div>`);
+  });
+  addMsg(`<strong>📡 Sensor Network Summary:</strong><br><br>🔴 <strong>6 critical parameters</strong> above WHO limits detected across sensor network<br>🟡 <strong>34% pipe flow loss</strong> = massive water waste + contamination entry points<br>🔵 <strong>Chlorine dropping from 0.45mg/L at plant to 0.04mg/L at Kasaragode taps</strong> — 91% loss through aging pipes<br><br><div class="chips"><span class="chip" onclick="ST('pipes')">🔧 Diagnose pipe failures</span><span class="chip" onclick="ST('chlorine')">🗺️ Chlorine map</span></div>`);
+}
+
+// ═══ DISEASE PREDICTION ═══
+function showDisease(){
+  const diseases=[
+    {d:'Dental Fluorosis',trigger:'Fluoride >1.5mg/L',prob:0.88,districts:'Kasaragode, Palakkad, Malappuram',color:'var(--red)',cases_est:'~12,000 new cases/yr',mechanism:'Fluoride replaces calcium in tooth enamel during development'},
+    {d:'Skeletal Fluorosis',trigger:'Fluoride >3.0mg/L (chronic)',prob:0.45,districts:'Kasaragode',color:'var(--amber)',cases_est:'~800 severe cases',mechanism:'Long-term fluoride accumulation in bone causing deformity'},
+    {d:'Cholera',trigger:'Coliform >0, Turbidity >10NTU',prob:0.72,districts:'Alappuzha, Kozhikkode',color:'var(--red)',cases_est:'Outbreak risk: HIGH',mechanism:'Vibrio cholerae survives in turbid water lacking chlorine'},
+    {d:'Typhoid Fever',trigger:'Coliform detected + low chlorine',prob:0.65,districts:'Alappuzha, Wayanad',color:'var(--amber)',cases_est:'Seasonal spike expected',mechanism:'Salmonella typhi transmission via contaminated water'},
+    {d:'Methemoglobinemia',trigger:'Nitrates >45mg/L',prob:0.58,districts:'Palakkad, Malappuram',color:'var(--amber)',cases_est:'Infant risk critical',mechanism:'Nitrates reduce blood oxygen-carrying capacity in infants'},
+    {d:'Arsenicosis',trigger:'Arsenic detected (Kasaragode)',prob:0.42,districts:'Kasaragode (endosulfan zone)',color:'var(--red)',cases_est:'Chronic exposure ongoing',mechanism:'Endosulfan breakdown products include arsenic compounds'},
+    {d:'Waterborne Gastroenteritis',trigger:'Turbidity >4 + monsoon',prob:0.82,districts:'8 districts — monsoon season',color:'var(--amber)',cases_est:'Peak: 50,000+ cases/season',mechanism:'Turbid monsoon water overwhelms treatment capacity'},
+    {d:'Skin & Eye Disorders',trigger:'pH <6.5 or >8.5',prob:0.55,districts:'Kasaragode, Wayanad',color:'var(--amber)',cases_est:'Widespread subclinical',mechanism:'Extreme pH damages mucous membranes and skin'},
+  ];
+  const rows=diseases.map(d=>`<div class="dr-row"><div class="dr-disease" style="color:var(--text)">${d.d}</div><div style="flex:1"><div class="dr-trigger">${d.trigger}</div><div style="font-size:10px;color:var(--text3)">${d.districts}</div></div><div><div class="dr-bar"><div class="dr-fill" style="width:${d.prob*100}%;background:${d.color}"></div></div><div class="dr-prob" style="color:${d.color}">${(d.prob*100).toFixed(0)}%</div></div></div>`).join('');
+
+  addMsg(`<strong>🧬 Disease Outbreak Prediction Engine</strong><br><span style="font-size:11px;color:var(--text3)">Water quality → pathogen risk → disease probability · Kerala-specific correlation</span>
+  <div class="disease-risk"><div class="dr-title">Predicted Disease Risk from Current Water Quality Data</div>${rows}</div>
+  <div style="margin-top:10px;padding:10px 12px;background:rgba(239,68,68,0.08);border-radius:8px;border:0.5px solid rgba(239,68,68,0.25)">
+    <div style="font-size:11px;color:var(--red);font-weight:500;margin-bottom:6px">⚠️ Imminent Risk — Next 30 Days</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.8">
+      <strong>Alappuzha:</strong> Coliform=12 CFU + Turbidity=14NTU + Cl₂=0.08mg/L → Cholera outbreak probability 72% before next monsoon peak<br>
+      <strong>Kasaragode:</strong> Fluoride=2.1mg/L → 88% dental fluorosis in children under 8 in affected zones<br>
+      <strong>Palakkad:</strong> Nitrates=58mg/L → Methemoglobinemia risk in infants — immediate formula water warning needed
+    </div>
+  </div>
+  <div style="margin-top:8px;padding:8px 12px;background:var(--bg3);border-radius:8px;border:0.5px solid var(--border2)">
+    <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.8">disease_risk = Σ(contamination_level / WHO_threshold × pathogen_survival_rate × exposure_probability)<br>outbreak_threshold: risk_score > 0.65 → ALERT panchayat immediately</div>
+  </div>
+  <div class="chips"><span class="chip" onclick="ST('alerts')">🚨 Generate disease alerts</span><span class="chip" onclick="ST('intl')">🌍 Prevention solutions</span><span class="chip" onclick="ST('chlorine')">🗺️ Fix chlorine levels</span></div>`);
+}
+
+// ═══ DAM CONTROL ═══
+function showDam(){
+  const dams=[
+    {n:'Idukki Arch Dam',l:89,cap:1996,dist:'Idukki',action:'RELEASE 450 MLD',color:'var(--red)',rec:'→ Alappuzha backwater dilution + Kochi supply',ai:'Overflow risk in 14 days at current rainfall rate'},
+    {n:'Banasura Sagar',l:82,cap:209,dist:'Wayanad',action:'PARTIAL RELEASE',color:'var(--amber)',rec:'→ 120 MLD to Malappuram drought zones',ai:'Drought relief priority — monsoon 3 weeks away'},
+    {n:'Kakki Reservoir',l:77,cap:463,dist:'Pathanamthitta',action:'HOLD',color:'var(--green)',rec:'→ Maintain for Kollam/Alappuzha buffer',ai:'Adequate — hold for post-monsoon dry season'},
+    {n:'Peechi Dam',l:74,cap:76,dist:'Thrissur',action:'HOLD',color:'var(--green)',rec:'→ Urban Thrissur supply sufficient',ai:'Stable — no action needed this week'},
+    {n:'Malampuzha',l:58,cap:151,dist:'Palakkad',action:'CONSERVE CRITICAL',color:'var(--amber)',rec:'→ Restrict irrigation, drinking priority only',ai:'Drought district — every MLD counts'},
+    {n:'Bekal Fort Dam',l:45,cap:12,dist:'Kasaragode',action:'CRISIS — SUPPLEMENT',color:'var(--red)',rec:'→ Emergency groundwater + Kakki pipeline',ai:'Below critical threshold — 2,567 drought wards affected'},
+  ];
+  const cards=dams.map(d=>`<div class="card" style="border-color:${d.color}25"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="card-t">${d.n}</div><div style="font-size:10px;color:${d.color};font-family:'JetBrains Mono',monospace">${d.action}</div></div><div style="height:60px;background:var(--border);border-radius:6px;overflow:hidden;position:relative;margin-bottom:6px"><div style="position:absolute;bottom:0;left:0;right:0;height:${d.l}%;background:${d.color}20;border-top:2px solid ${d.color};display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px"><span style="color:${d.color};font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:600">${d.l}% · ${d.cap}MCM</span></div></div><div style="font-size:11px;color:var(--text3)">${d.rec}</div><div style="font-size:10px;color:var(--text4);margin-top:4px;font-style:italic">${d.ai}</div></div>`).join('');
+  addMsg(`<strong>🏞️ AI Dam Control — Kerala Reservoir Network</strong><br><span style="font-size:11px;color:var(--text3)">Real-time levels · AI flow optimization · drought-surplus routing · flood prevention</span>
+  <div class="g2" style="margin-top:8px">${cards}</div>
+  <div style="margin-top:10px;padding:10px 12px;background:rgba(6,182,212,0.08);border-radius:8px;border:0.5px solid rgba(6,182,212,0.3)">
+    <div style="font-size:11px;color:var(--cyan);font-weight:500;margin-bottom:6px">🧠 AI Redistribution Decision — Right Now</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.8">
+      Idukki (89%) → release immediately → prevents overflow AND provides 450MLD to drought zones<br>
+      Banasura Sagar (82%) → partial release → Malappuram 340 drought wards need water today<br>
+      Bekal (45%) → EMERGENCY → activate Kakki pipeline + groundwater extraction protocol
+    </div>
+  </div>
+  <div class="chips"><span class="chip" onclick="ST('redist')">🔄 Execute redistribution plan</span><span class="chip" onclick="ST('retention')">💦 Retain more rainfall</span></div>`);
+}
+
+// ═══ PIPE HEALTH ═══
+function showPipes(){
+  const pipes=[
+    {n:'Kozhikkode Urban — Zone K1-K8',age:42,st:'critical',leaks:8,pres:1.2,loss:38,mat:'Cast iron',action:'Replace immediately — 8 leak points active. Iron contamination at tap: 0.8mg/L'},
+    {n:'Ernakulam Distribution Main',age:38,st:'critical',leaks:6,pres:1.4,loss:31,mat:'Asbestos cement',action:'Emergency — asbestos fibre leaching detected. Health emergency.'},
+    {n:'Thiruvananthapuram Ring Main',age:35,st:'poor',leaks:4,pres:1.6,loss:24,mat:'Cast iron',action:'Priority replacement within 6 months — corrosion >80%'},
+    {n:'Alappuzha Backwater Network',age:28,st:'aging',leaks:3,pres:1.8,loss:18,mat:'GI pipes',action:'Salinity corrosion detected — replace within 1 year'},
+    {n:'Wayanad Tribal Area Supply',age:31,st:'poor',leaks:2,pres:1.5,loss:22,mat:'GI pipes',action:'Tribal area — critical replacement for safe water access'},
+    {n:'Palakkad Rural Network',age:22,st:'fair',leaks:1,pres:2.1,loss:12,mat:'PVC',action:'Monitor — minor leak at junction K-24'},
+    {n:'Thrissur Urban Supply',age:15,st:'good',leaks:0,pres:2.8,loss:6,mat:'HDPE',action:'Good — continue monitoring'},
+    {n:'Kannur District Main',age:12,st:'good',leaks:0,pres:3.1,loss:4,mat:'HDPE',action:'Optimal — no action needed'},
+  ];
+  const sc={critical:'var(--red)',poor:'var(--amber)',aging:'var(--amber)',fair:'var(--cyan)',good:'var(--green)'};
+  const cards=pipes.map(p=>`<div class="card" style="border-color:${sc[p.st]}25"><div class="card-t">${p.n}</div><div style="display:flex;align-items:center;gap:6px;margin:4px 0"><div style="width:8px;height:8px;border-radius:50%;background:${sc[p.st]}"></div><div style="font-size:11px;color:${sc[p.st]}">${p.st.toUpperCase()} · ${p.leaks} leak${p.leaks!==1?'s':''} · ${p.loss}% loss</div></div><div style="font-size:10px;color:var(--text3)">${p.age}yr · ${p.mat} · ${p.pres}bar</div><div style="font-size:11px;color:var(--text2);margin-top:6px;padding-top:4px;border-top:0.5px solid var(--border)">→ ${p.action}</div></div>`).join('');
+  addMsg(`<strong>🔧 Pipe Health Intelligence Scanner</strong><br><span style="font-size:11px;color:var(--text3)">Pressure sensors · flow analysis · material degradation · age-based risk</span>
+  <div class="g2" style="margin-top:8px">${cards}</div>
+  <div style="margin-top:10px;padding:10px 12px;background:rgba(239,68,68,0.08);border-radius:8px;border:0.5px solid rgba(239,68,68,0.25)">
+    <div style="font-size:11px;color:var(--red);font-weight:500;margin-bottom:6px">⚠️ Critical Discovery — Pipes Are The Contamination Source</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.7">Ernakulam asbestos pipes (38yr) leaching carcinogenic fibres. Kozhikkode iron pipes causing 0.8mg/L iron at tap vs 0.1mg/L at plant. <strong>Treatment water is clean — pipes are contaminating it.</strong> 34% average flow loss = 153 MLD wasted daily.</div>
+  </div>
+  <div class="chips"><span class="chip" onclick="ST('intl')">🌍 Japan's pipe solution</span><span class="chip" onclick="ST('alerts')">🚨 Alert pipe teams</span></div>`);
+}
+
+// ═══ SATELLITE ═══
+function showSatellite(){
+  const nodes=Object.values(D).map(d=>{
+    const x=((d.lon-74.5)/3.0)*100;const y=((12.8-d.lat)/5.0)*100;
+    const c=d.risk>0.65?'#ef4444':d.risk>0.45?'#f59e0b':'#22c55e';
+    const sz=18+d.risk*18;
+    return `<div class="cl-node" onclick="AD('${d.n}')" style="left:${Math.min(88,Math.max(3,x))}%;top:${Math.min(88,Math.max(3,y))}%;width:${sz}px;height:${sz}px;background:${c}35;border-color:${c};font-size:8px;color:${c}" title="${d.n}: ${(d.risk*100).toFixed(0)}%">${d.n.substring(0,3)}</div>`;
+  }).join('');
+  addMsg(`<strong>🛰️ Satellite Intelligence — ISRO Bhuvan + Sentinel-2</strong><br><span style="font-size:11px;color:var(--text3)">Water body analysis · algal bloom detection · drought mapping · land use change</span>
+  <div class="cl-map"><div style="font-size:11px;color:var(--text2);font-weight:500;margin-bottom:8px">Kerala Water Risk Map <span style="color:var(--text3);font-size:10px">(click district → full analysis)</span></div><div class="cl-canvas">${nodes}</div><div class="cl-legend" style="margin-top:6px"><div class="cl-leg"><div class="cl-leg-dot" style="background:#ef4444"></div>High risk &gt;65%</div><div class="cl-leg"><div class="cl-leg-dot" style="background:#f59e0b"></div>Moderate 45-65%</div><div class="cl-leg"><div class="cl-leg-dot" style="background:#22c55e"></div>Lower &lt;45%</div></div></div>
+  <div style="margin-top:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;border:0.5px solid var(--border2)">
+    <div style="font-size:11px;color:var(--text2);font-weight:500;margin-bottom:8px">🛰️ Sentinel-2 Findings — Last 30 Days</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.8">
+      🔴 <strong>Alappuzha backwaters:</strong> Chlorophyll-a index 0.74 — severe algal bloom visible from space<br>
+      🟡 <strong>Vembanad Lake:</strong> 23% surface area showing eutrophication<br>
+      🟠 <strong>Palakkad reservoirs:</strong> Water surface area reduced 31% vs 5yr average<br>
+      🔵 <strong>Wayanad:</strong> Landslide turbidity plume in Kabani river — 340km² affected<br>
+      🟢 <strong>Idukki:</strong> High water level — optimal for controlled release
+    </div>
+  </div>
+  <div class="chips"><span class="chip" onclick="ST('redist')">🔄 Use satellite data for routing</span><span class="chip" onclick="AD('Alappuzha')">🔴 Alappuzha algal crisis</span></div>`);
+}
+
+// ═══ REDISTRIBUTION ═══
+function showRedist(){
+  addMsg(`<strong>🔄 AI Water Redistribution Engine</strong><br><span style="font-size:11px;color:var(--text3)">Surplus district → drought district routing · Kerala terrain analysis · AI optimised</span>
+  <div style="margin-top:10px;padding:12px;background:var(--bg3);border-radius:8px;border:0.5px solid rgba(6,182,212,0.3)">
+    <div style="font-size:11px;color:var(--cyan);font-weight:500;margin-bottom:10px">Active Redistribution Routes</div>
+    ${[{f:'Idukki (89%)',t:'Alappuzha drought+algae',v:'450 MLD',d:'142km',m:'Gravity+pump',s:'ACTIVE',c:'var(--green)'},{f:'Banasura Sagar (82%)',t:'Malappuram 340 wards',v:'120 MLD',d:'87km',m:'Pipeline release',s:'ACTIVE',c:'var(--green)'},{f:'Kakki (77%)',t:'Kasaragode emergency',v:'200 MLD',d:'231km',m:'Emergency pipeline',s:'PROPOSED',c:'var(--amber)'},{f:'Peechi (74%)',t:'Palakkad urban supply',v:'80 MLD',d:'52km',m:'Existing canal',s:'PLANNED',c:'var(--cyan)'}].map(r=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:11px"><span style="color:var(--text2);width:130px">${r.f}</span><span style="color:var(--cyan)">→</span><span style="color:var(--amber);flex:1">${r.t}</span><div style="text-align:right"><div style="color:${r.c};font-family:'JetBrains Mono',monospace;font-size:10px">${r.v} · ${r.s}</div><div style="color:var(--text3);font-size:10px">${r.d} · ${r.m}</div></div></div>`).join('')}
+  </div>
+  <div style="margin-top:10px;padding:10px 12px;background:rgba(6,182,212,0.06);border-radius:8px;border:0.5px solid rgba(6,182,212,0.2)">
+    <div style="font-size:11px;color:var(--cyan);font-weight:500;margin-bottom:6px">💡 The Core Problem AquaHeuristic Solves</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.8">Kerala gets 3,000mm+ rainfall — one of India's wettest states. Yet 2,567 wards face drought because <strong>76% of water flows directly to sea</strong> due to steep terrain. AquaHeuristic acts as a <strong>virtual intelligent dam network</strong> — detecting surplus, finding drought zones, routing water through optimal paths in real time.</div>
+  </div>
+  <div style="margin-top:8px;padding:8px;background:var(--bg3);border-radius:6px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.8">route_priority = surplus_level × drought_severity / (distance × infrastructure_cost)<br>optimal_flow = argmax(relief_impact) subject to pipe_capacity_constraints</div>
+  <div class="chips"><span class="chip" onclick="ST('dam')">🏞️ Check dam levels</span><span class="chip" onclick="ST('retention')">💦 Retention plan</span></div>`);
+}
+
+// ═══ INTERNATIONAL SOLUTIONS ═══
+function showIntl(){
+  const solutions=[
+    {country:'🇸🇬 Singapore',color:'#3b82f6',solution:'NEWater — 4-Stage Purification',detail:'Singapore recycles 100% of wastewater through microfiltration → reverse osmosis → UV disinfection → advanced oxidation. Produces water cleaner than WHO standards from sewage.',result:'40% of national water needs met from recycled water. Zero water crisis in 60 years.',apply:'Kerala can apply NEWater to treat Alappuzha backwater and Kozhikkode industrial discharge. Estimated cost: ₹850 crore for Alappuzha pilot.',metric:'Water recycling: 0% → 40%'},
+    {country:'🇮🇱 Israel',color:'#22c55e',solution:'Precision Groundwater Recharge + Drip AI',detail:'Israel injects treated wastewater back into aquifers during monsoon, extracts during drought. AI-controlled drip irrigation reduces agricultural water use by 60%.',result:'From water crisis to water exporter. Agriculture uses 70% less water than traditional methods.',apply:'Kerala loses 76% rainfall to sea. Israel method: capture monsoon excess → inject into Palakkad aquifers → extract during summer drought. Solves Palakkad fluoride by dilution.',metric:'Rainfall retention: 24% → 85%'},
+    {country:'🇳🇱 Netherlands',color:'#06b6d4',solution:'Room for the River + Flood-to-Freshwater',detail:'Netherlands converted flood-prone areas into freshwater storage basins. Excess floodwater filtered through natural sand beds and stored as clean groundwater.',result:'Eliminated 95% of flood damage AND created 2.3 billion m³ new freshwater storage.',apply:'Kerala Kuttanad below sea level — Netherlands model converts flood threat to water asset. Alappuzha backwater can become managed freshwater reservoir with tidal gates.',metric:'Flood damage: -95% · Freshwater storage: +2.3B m³'},
+    {country:'🇯🇵 Japan',color:'#f59e0b',solution:'Seismic-Proof Smart Pipe Network',detail:'Japan replaced all pipes with earthquake and corrosion-resistant polyethylene. Embedded sensors every 200m detect leaks within minutes. AI predicts pipe failure 6 months before it happens.',result:'Pipe leak rate reduced from 18% to 2.4%. Zero asbestos pipe remains in Japan.',apply:'Ernakulam and Kozhikkode asbestos pipes: Japan-style replacement with sensor-embedded HDPE. Predictive AI prevents 90% of contamination events.',metric:'Pipe loss: 38% → 2.4%'},
+    {country:'🇩🇪 Germany',color:'#8b5cf6',solution:'Groundwater Recharge Forests + Slow Filtration',detail:'Germany plants specific forests on sandy soil above aquifers. Rainwater filters through 30m of sand over 6-12 months, removing all pathogens and emerging contaminants naturally.',result:'Berlin gets 100% of drinking water from naturally filtered rainwater. Zero chemical treatment needed.',apply:'Wayanad and Idukki highlands: plant recharge forests on laterite soil. Monsoon water infiltrates naturally, recharges Palakkad and Malappuram aquifers, reducing fluoride by dilution.',metric:'Chemical treatment: 0% needed · Natural filtration: 99.9%'},
+    {country:'🇦🇺 Australia',color:'var(--amber)',solution:'Managed Aquifer Recharge (MAR) System',detail:'Australia injects treated stormwater into depleted aquifers during monsoon using injection bores. AI monitors aquifer levels and water quality in real time.',result:'Perth secured water supply through 45% reduction in dam dependency during worst drought in history.',apply:'Kasaragode endosulfan aquifer: controlled recharge with clean water dilutes contamination over 5-10 years. Estimated 60% fluoride reduction in 7 years.',metric:'Dam dependency: -45% · Aquifer recovery: +60%'},
+  ];
+  const cards=solutions.map(s=>`<div class="intl-card" style="border-left-color:${s.color}"><div class="intl-country" style="color:${s.color}">${s.country}</div><div class="intl-solution">${s.solution}</div><div class="intl-detail">${s.detail}</div><div style="margin-top:6px;padding:4px 8px;background:rgba(255,255,255,0.05);border-radius:4px;font-size:11px;color:var(--cyan)">Kerala application: ${s.apply}</div><div class="intl-result" style="background:${s.color}15;color:${s.color}">${s.result}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">📊 ${s.metric}</div></div>`).join('');
+  addMsg(`<strong>🌍 Global Water Solutions Engine</strong><br><span style="font-size:11px;color:var(--text3)">World's best water technologies — Singapore · Israel · Netherlands · Japan · Germany · Australia</span>
+  <div class="intl-grid" style="margin-top:10px">${cards}</div>
+  <div style="margin-top:12px;padding:12px;background:rgba(6,182,212,0.08);border-radius:8px;border:0.5px solid rgba(6,182,212,0.3)">
+    <div style="font-size:11px;color:var(--cyan);font-weight:500;margin-bottom:8px">🏆 AquaHeuristic Recommended Strategy for Kerala</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.8">
+      <strong>Phase 1 (0-2 years):</strong> Japan pipe replacement in Ernakulam + Kozhikkode (eliminates asbestos emergency)<br>
+      <strong>Phase 2 (1-3 years):</strong> Israel-style aquifer recharge in Palakkad + Malappuram (solves fluoride + drought)<br>
+      <strong>Phase 3 (2-5 years):</strong> Netherlands flood-to-freshwater in Alappuzha (converts backwater crisis to asset)<br>
+      <strong>Phase 4 (3-7 years):</strong> Singapore NEWater for Kozhikkode industrial zone (closes water loop)<br>
+      <strong>Phase 5 (ongoing):</strong> Germany recharge forests in Wayanad highlands (natural filtration forever)
+    </div>
+  </div>
+  <div class="chips"><span class="chip" onclick="ST('retention')">💦 Retention infrastructure plan</span><span class="chip" onclick="ST('redist')">🔄 Implement redistribution</span><span class="chip" onclick="ST('alerts')">🚨 Alert policymakers</span></div>`);
+}
+
+// ═══ RAINFALL RETENTION ═══
+function showRetention(){
+  addMsg(`<strong>💦 Rainfall Retention AI — Stop 76% Water Loss to Sea</strong><br><span style="font-size:11px;color:var(--text3)">Kerala gets 3,000mm rain · loses 2,280mm to sea · retains only 720mm · AI identifies where to stop this</span>
+  <div style="margin-top:10px;padding:12px;background:rgba(6,182,212,0.08);border-radius:8px;border:0.5px solid rgba(6,182,212,0.3)">
+    <div style="font-size:11px;color:var(--cyan);font-weight:500;margin-bottom:8px">🧠 AI-Identified Retention Opportunities</div>
+    ${[
+      {loc:'Western Ghats Slopes — Wayanad/Idukki',type:'Check dams + micro-weirs',volume:'450 MCM/year',cost:'₹240 crore',impact:'Recharges Palakkad aquifers · reduces drought by 40%',feasibility:'High'},
+      {loc:'Kuttanad Low-lying Zone — Alappuzha',type:'Tidal exclusion gates + polders',volume:'320 MCM/year',cost:'₹180 crore',impact:'Netherlands-model freshwater basin · eliminates salinity intrusion',feasibility:'High'},
+      {loc:'Kasaragode Laterite Belt',type:'Percolation ponds + injection bores',volume:'120 MCM/year',cost:'₹85 crore',impact:'Dilutes endosulfan/fluoride contamination · recharges aquifer',feasibility:'Medium'},
+      {loc:'Urban Stormwater — Kochi/Thrissur/Kozhikkode',type:'Permeable pavements + rooftop harvesting',volume:'80 MCM/year',cost:'₹95 crore',impact:'Reduces urban flooding · recharges urban groundwater',feasibility:'High'},
+      {loc:'Palakkad Gap — Wind+Rain Corridor',type:'Windbreak forests + contour trenches',volume:'200 MCM/year',cost:'₹120 crore',impact:'Germany-model forest recharge · natural fluoride dilution',feasibility:'Medium'},
+    ].map(r=>`<div style="padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="font-size:12px;color:var(--text);font-weight:500">${r.loc}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:5px"><div><div style="font-size:10px;color:var(--text3)">Type</div><div style="font-size:11px;color:var(--text2)">${r.type}</div></div><div><div style="font-size:10px;color:var(--text3)">Volume</div><div style="font-size:11px;color:var(--green)">${r.volume}</div></div><div><div style="font-size:10px;color:var(--text3)">Cost</div><div style="font-size:11px;color:var(--cyan)">${r.cost}</div></div></div><div style="font-size:11px;color:var(--text3);margin-top:4px">Impact: ${r.impact}</div></div>`).join('')}
+  </div>
+  <div style="margin-top:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;border:0.5px solid var(--border2)">
+    <div style="font-size:11px;color:var(--text2);font-weight:500;margin-bottom:6px">📊 If ALL retention sites implemented:</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px">
+      <div class="sc"><div class="sc-v" style="color:var(--green)">76%→35%</div><div class="sc-k">sea loss</div></div>
+      <div class="sc"><div class="sc-v" style="color:var(--cyan)">1,170MCM</div><div class="sc-k">new storage</div></div>
+      <div class="sc"><div class="sc-v" style="color:var(--amber)">₹720Cr</div><div class="sc-k">total cost</div></div>
+      <div class="sc"><div class="sc-v" style="color:var(--green)">2,567→0</div><div class="sc-k">drought wards</div></div>
+    </div>
+  </div>
+  <div class="chips"><span class="chip" onclick="ST('intl')">🌍 Israel+Germany methods</span><span class="chip" onclick="ST('redist')">🔄 Integrate with redistribution</span></div>`);
+}
+
+// ═══ EMERGENCY ALERTS ═══
+function showAlerts(){
+  const alerts=[
+    {level:'CRITICAL',district:'Kasaragode',param:'Chlorine 0.04mg/L + Fluoride 2.1mg/L + Coliform 4CFU',action:'Immediate supply suspension + emergency tanker deployment',sms:`ALERT: KWA Kasaragode\nWater UNSAFE for consumption.\nCl2: 0.04mg/L (unsafe)\nFluoride: 2.1mg/L (unsafe)\nAction: DO NOT DRINK\nEmergency tankers: Ward 12,15,18,24\nContact: 1800-425-1003\nSent: AquaHeuristic AI · ${now()}`,color:'var(--red)'},
+    {level:'CRITICAL',district:'Alappuzha',param:'Coliform 12CFU + Turbidity 14NTU + Chlorine 0.08mg/L',action:'Cholera risk — boil water advisory + health department alert',sms:`ALERT: KWA Alappuzha\nCholera RISK DETECTED.\nColiform: 12CFU/100mL\nTurbidity: 14NTU\nBoil ALL water before use.\nHealth Dept alerted.\nContact Panchayat: 0477-XXXXXXX\nSent: AquaHeuristic AI · ${now()}`,color:'var(--red)'},
+    {level:'WARNING',district:'Palakkad',param:'Nitrates 58mg/L + Dam 58% — drought warning',action:'Infant formula water advisory + dam conservation order',sms:`WARNING: KWA Palakkad\nNitrates ELEVATED: 58mg/L\nDO NOT use tap water for\ninfant formula or baby food.\nUse bottled/boiled water only.\nDam: 58% - conservation order.\nSent: AquaHeuristic AI · ${now()}`,color:'var(--amber)'},
+    {level:'WARNING',district:'Wayanad',param:'Turbidity 22NTU + pH 6.4 + Pipe status: poor',action:'Boil water advisory + pipe maintenance team dispatch',sms:`WARNING: KWA Wayanad\nWater quality degraded.\nTurbidity: 22NTU (monsoon effect)\npH: 6.4 (acidic)\nBoil water before use.\nPipe team dispatched to Zone 3.\nSent: AquaHeuristic AI · ${now()}`,color:'var(--amber)'},
+  ];
+  alerts.forEach(a=>{
+    addMsg(`<div class="alert-box" style="background:${a.color}08;border-color:${a.color}40"><div class="alert-title"><div class="alert-pulse" style="background:${a.color}"></div>${a.level} — ${a.district}</div><div style="font-size:12px;color:var(--text2);margin-bottom:6px"><strong>Trigger:</strong> ${a.param}</div><div style="font-size:12px;color:var(--text2);margin-bottom:8px"><strong>Action:</strong> ${a.action}</div><div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-family:'JetBrains Mono',monospace">📱 Auto-generated SMS — Panchayat Officials + District Collector</div><div class="alert-sms">${a.sms.replace(/\n/g,'<br>')}</div><div style="display:flex;gap:6px;margin-top:8px"><span class="chip" style="border-color:${a.color}40;color:${a.color}">Copy SMS</span><span class="chip" onclick="AD('${a.district}')">View full analysis</span></div></div>`);
+  });
+  addMsg(`<strong>🚨 Alert System Summary — Active Emergencies</strong><br><br>
+  <div style="padding:10px 12px;background:var(--bg3);border-radius:8px;border:0.5px solid var(--border2)">
+    <div style="font-size:12px;color:var(--text2);line-height:1.8">
+      AquaHeuristic auto-generates alerts when:<br>
+      • Chlorine drops below 0.2mg/L → <strong>immediate suspension alert</strong><br>
+      • Coliform detected → <strong>cholera/typhoid risk alert to health dept</strong><br>
+      • Nitrates exceed 45mg/L → <strong>infant advisory to ASHA workers</strong><br>
+      • Dam drops below 50% in drought district → <strong>conservation order to irrigation dept</strong><br>
+      • Pipe pressure drops 20% → <strong>leak team dispatch order</strong><br><br>
+      Recipients: Panchayat President · District Water Officer · District Collector · KWA Regional HQ · State Health Dept
+    </div>
+  </div>
+  <div class="chips"><span class="chip" onclick="ST('chlorine')">🗺️ View chlorine map</span><span class="chip" onclick="ST('disease')">🧬 Disease risk</span><span class="chip" onclick="ST('intl')">🌍 Prevention solutions</span></div>`);
+}
+
+// ═══ UTILS ═══
+function TB(h){const b=h.nextElementSibling;const t=h.querySelector('div:last-child');const hidden=b.style.display==='none';b.style.display=hidden?'block':'none';t.textContent=hidden?'▼':'▶';}
+function showEg(){
+  const egs=['Analyse Kasaragode water risk','Show chlorine distribution map','Predict disease outbreaks Kerala','Show all sensor alerts','Idukki dam water release plan','How Singapore solved water problems','Route water from Idukki to drought zones','Kozhikkode pipe health emergency','Show rainfall retention opportunities','Generate emergency SMS alerts'];
+  addMsg(`Examples:<div class="chips">${egs.map(e=>`<span class="chip" onclick="UE('${e}')">${e}</span>`).join('')}</div>`);
+}
+function UE(t){document.getElementById('inp').value=t;send();}
+function resetAll(){document.getElementById('msgs').innerHTML='';window.onload();}
+function HK(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+function AR(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+function sl(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// INIT
+window.onload=()=>{
+  renderDistricts();
+  addMsg(`<strong>💧 AquaHeuristic — Kerala Water Intelligence Platform</strong><br><span style="font-size:11px;color:var(--cyan);font-family:'JetBrains Mono',monospace">World's First Explainable AI Water Management System</span><br><br>
+  Kerala's water crisis in numbers:<br>
+  🔴 <strong>2,567 wards drought-hit</strong> despite 3,000mm annual rainfall<br>
+  🟡 <strong>50% of wells contaminated</strong> — national survey 2025<br>
+  🔵 <strong>76% of rainfall lost to sea</strong> — steep terrain, no retention<br>
+  🟠 <strong>Endosulfan legacy</strong> contaminating Kasaragode for decades<br>
+  🔧 <strong>34% pipe flow loss</strong> — 153 MLD wasted daily<br><br>
+  <strong>10 AI modules solving all of this:</strong> Water Risk Engine · Chlorine Distribution Map · Live IoT Sensors · Disease Prediction · AI Dam Control · Pipe Health Scanner · Satellite Intelligence · Water Redistribution · Global Solutions · Rainfall Retention · Emergency Alerts<br><br>
+  <strong>This is the world's first system combining all these into one explainable AI platform.</strong>`);
+  const egs=['Show chlorine map for all districts','Predict disease outbreaks from water data','How does Israel solve water scarcity?','Analyse Kasaragode emergency','Generate SMS alerts for panchayat','Route water from Idukki to drought zones'];
+  addMsg(`Start here:<div class="chips">${egs.map(e=>`<span class="chip" onclick="UE('${e}')">${e}</span>`).join('')}</div>`);
+};
+</script>
+</body>
+</html>
