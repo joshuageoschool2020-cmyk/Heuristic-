@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Heuristic Dashboard</title>
+    <style>
+        :root {
+            --primary: #5F57FF; /* Your brand color */
+            --bg: #000000;      /* Deep black background */
+            --sidebar: #0f0f0f;
+            --text-white: #ffffff;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-white); display: flex; margin: 0; }
+        
+        /* Sidebar Styling */
+        nav { width: 260px; background: var(--sidebar); height: 100vh; padding: 30px; border-right: 1px solid #222; }
+        nav h2 { color: var(--text-white); font-weight: 800; }
+        nav h2 span { color: var(--primary); }
+        
+        /* Main Layout */
+        main { flex-grow: 1; padding: 40px; }
+        .card { background: var(--sidebar); padding: 25px; border-radius: 12px; margin-bottom: 25px; border-left: 5px solid var(--primary); }
+        
+        /* Inputs & Buttons */
+        input { background: #1a1a1a; border: 1px solid #333; color: white; padding: 12px; width: 60%; border-radius: 6px; }
+        .btn { background: var(--primary); color: white; padding: 12px 25px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <nav>
+        <h2>heuristic<span>_</span></h2>
+        <p style="color: #666; margin-top: 40px;">DASHBOARD</p>
+        <p>LEDGER</p>
+        <p>SETTINGS</p>
+    </nav>
+    <main>
+        <div class="card">
+            <h3>Ingestion Engine</h3>
+            <input type="text" id="payload" placeholder="e.g., CRITICAL: System failure detected...">
+            <button class="btn" onclick="sendData()">PROCESS DATA</button>
+        </div>
+        <div class="card" id="status-panel">
+            <h3>System Status: <span style="color: var(--primary);">OPERATIONAL</span></h3>
+            <p id="result-display">Ready for input stream...</p>
+        </div>
+    </main>
+    <script>
+        async function sendData() {
+            const data = document.getElementById('payload').value;
+            const res = await fetch('/api/v1/ingest', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-Heuristic-Token': 'h_alpha_dev_882'},
+                body: JSON.stringify({payload_data: data})
+            });
+            const result = await res.json();
+            document.getElementById('result-display').innerText = "Result: " + result.action_result;
+        }
+    </script>
+</body>
+</html>
