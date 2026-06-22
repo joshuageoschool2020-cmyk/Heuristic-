@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { brand: '#5F57FF' } } } }
+    </script>
+</head>
+<body class="bg-[#0A0A0A] text-gray-400 font-mono p-10">
+    <div class="max-w-6xl mx-auto border border-zinc-800 p-8 rounded-xl bg-zinc-900/20">
+        <h1 class="text-white text-2xl mb-1">HEURISTIC_ ENGINE</h1>
+        <p class="text-brand text-sm mb-8">SYSTEM OPERATIONAL [v3.1] | USER: JOSHUA_W</p>
+        
+        <div class="grid grid-cols-2 gap-8">
+            <!-- Left: Ingestion -->
+            <div class="border border-zinc-800 p-6 rounded-lg">
+                <h2 class="text-white mb-4">DATA INGESTION PANEL</h2>
+                <div class="border-2 border-dashed border-zinc-700 p-12 text-center rounded-lg hover:border-brand cursor-pointer transition-colors">
+                    Drag and Drop or Click
+                </div>
+                <textarea class="w-full mt-4 bg-transparent border border-zinc-700 p-2 text-white" placeholder="// Raw concept entry..."></textarea>
+                <button class="w-full mt-4 bg-brand text-white py-3 rounded-md font-bold">INITIALIZE_ANALYSIS</button>
+            </div>
+            
+            <!-- Right: Output -->
+            <div class="border border-zinc-800 p-6 rounded-lg bg-black/40">
+                <h2 class="text-white mb-4">SYNTHETIC_OUTPUT</h2>
+                <div class="space-y-4">
+                    <div class="border border-brand/30 p-4 rounded bg-brand/5">
+                        <p class="text-white font-bold">CORE CONCEPT EXTRACT</p>
+                        <p class="text-xs">* CONFIDENCE: 98%</p>
+                    </div>
+                    <div class="h-32 border border-zinc-800 rounded"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

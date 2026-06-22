@@ -1,28 +1,24 @@
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
+from brain import process_concept
 
 app = FastAPI()
 
-# Middleware to keep the connection secure
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# 1. This serves your "Face" (index.html)
+# Routes to serve your HTML files
 @app.get("/")
-async def read_index():
-    return FileResponse('index.html')
+async def read_landing():
+    return FileResponse('indexland.html')
 
-# 2. This is the "Engine" (where your backend logic runs)
+@app.get("/app")
+async def read_app():
+    return FileResponse('app.html')
+
+# API endpoint for the engine
 class RequestData(BaseModel):
     text: str
 
 @app.post("/explain")
 def explain_text(data: RequestData):
-    # This acts as the bridge to your brain.py logic
-    return {"result": f"Heuristic Engine analysis for: {data.text}"}
+    result = process_concept(data.text)
+    return {"result": result}
