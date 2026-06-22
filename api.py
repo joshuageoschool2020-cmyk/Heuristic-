@@ -7,14 +7,16 @@ import uvicorn
 
 app = FastAPI()
 
-# Routes now correctly use the 'app' object defined above
+# Get the directory where api.py is located
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 @app.get("/")
 async def read_landing():
-    return FileResponse(os.path.join(os.getcwd(), 'indexland.html'))
+    return FileResponse(os.path.join(BASE_DIR, 'indexland.html'))
 
 @app.get("/app")
 async def read_app():
-    return FileResponse(os.path.join(os.getcwd(), 'app.html'))
+    return FileResponse(os.path.join(BASE_DIR, 'app.html'))
 
 class RequestData(BaseModel):
     text: str
@@ -23,7 +25,3 @@ class RequestData(BaseModel):
 def explain_text(data: RequestData):
     result = process_concept(data.text)
     return {"result": result}
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run("api:app", host="0.0.0.0", port=port)
