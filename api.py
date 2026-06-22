@@ -1,26 +1,26 @@
+import os
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from brain import process_concept
-import os
 import uvicorn
 
 app = FastAPI()
 
-class RequestData(BaseModel):
-    text: str
-
+# Routes now correctly use the 'app' object defined above
 @app.get("/")
 async def read_landing():
-    return FileResponse('indexland.html')
+    return FileResponse(os.path.join(os.getcwd(), 'indexland.html'))
 
 @app.get("/app")
 async def read_app():
-    return FileResponse('app.html')
+    return FileResponse(os.path.join(os.getcwd(), 'app.html'))
+
+class RequestData(BaseModel):
+    text: str
 
 @app.post("/explain")
 def explain_text(data: RequestData):
-    # This calls your brain logic without any manual input
     result = process_concept(data.text)
     return {"result": result}
 
