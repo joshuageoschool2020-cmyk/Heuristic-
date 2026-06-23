@@ -2,30 +2,25 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 import uvicorn
+from brain import process_concept
 
 app = FastAPI()
 
-# Mount the 'static' folder to make all files inside it accessible
-# This ensures Tailwind and other styles are loaded correctly
+# Mount the static folder
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 async def read_landing():
-    # Points to the new location in the static folder
     return FileResponse("static/indexland.html")
 
 @app.get("/app")
 async def read_app():
-    # Points to the new location in the static folder
     return FileResponse("static/app.html")
 
-# Keep your existing logic
-class RequestData(from pydantic import BaseModel):
+class RequestData(BaseModel):
     text: str
-
-# Import your brain logic
-from brain import process_concept
 
 @app.post("/explain")
 def explain_text(data: RequestData):
