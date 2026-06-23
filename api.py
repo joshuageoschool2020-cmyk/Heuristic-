@@ -5,43 +5,53 @@ from brain import process_concept
 
 app = FastAPI()
 
-# --- CSS and HTML combined for maximum reliability ---
-PAGE_HTML = """
+# This is the exact layout structure to match your dashboard design
+UI_HTML = """
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0A0A0A; color: white; font-family: sans-serif; text-align: center; padding: 50px; }
-        .btn { background-color: #2563eb; color: white; padding: 15px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; }
-        .box { border: 1px solid #333; padding: 20px; border-radius: 10px; max-width: 500px; margin: auto; }
-        textarea { width: 100%; height: 100px; background: black; color: white; margin-bottom: 10px; }
+        body { background-color: #0c121c; color: #78a1bb; font-family: 'Courier New', monospace; }
+        .panel { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; }
     </style>
 </head>
-<body>
-    <div id="content">
-        <h1>DEPLOY ADVANCED COGNITIVE ANALYTICS.</h1>
-        <a href="/app" class="btn">LAUNCH ENGINE</a>
+<body class="p-6">
+    <header class="mb-6 border-b border-gray-700 pb-4">
+        <h1 class="text-xl font-bold text-white">HEURISTIC_ENGINE</h1>
+        <p class="text-xs text-gray-400">SYSTEM OPERATIONAL [v3.1] | USER: JOSHUA_W</p>
+    </header>
+    
+    <div class="grid grid-cols-2 gap-6">
+        <div class="panel p-5">
+            <h2 class="text-blue-300 mb-3 font-bold uppercase text-sm tracking-widest">// DATA INGESTION PANEL</h2>
+            <div class="border-2 border-dashed border-gray-600 p-6 text-center mb-4">
+                <p>Drag and Drop or Click</p>
+            </div>
+            <textarea id="textarea" class="w-full h-32 bg-black border border-gray-600 p-3 text-blue-200" placeholder="// Raw Concept Entry..."></textarea>
+            <button onclick="runAnalysis()" class="w-full mt-4 bg-blue-700 py-2 font-bold hover:bg-blue-600">INITIALIZE_ANALYSIS</button>
+        </div>
+
+        <div class="panel p-5">
+            <h2 class="text-blue-300 mb-3 font-bold uppercase text-sm tracking-widest">// SYNTHETIC_OUTPUT // Analysis Report</h2>
+            <div id="output-box" class="h-64 overflow-y-auto border border-gray-700 p-4 text-sm text-gray-300">
+                // Awaiting input sequence...
+            </div>
+        </div>
     </div>
+    
     <script>
-        if (window.location.pathname === '/app') {
-            document.getElementById('content').innerHTML = `
-                <div class="box">
-                    <h1>HEURISTIC_ENGINE</h1>
-                    <textarea id="in"></textarea>
-                    <button onclick="run()">Run Analysis</button>
-                    <div id="out" style="margin-top:20px;">Result...</div>
-                </div>
-            `;
-        }
-        async function run() {
-            const text = document.getElementById('in').value;
+        async function runAnalysis() {
+            const input = document.getElementById('textarea').value;
+            const output = document.getElementById('output-box');
+            output.innerText = "Processing sequence...";
             const res = await fetch('/explain', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: text })
+                body: JSON.stringify({ text: input })
             });
             const data = await res.json();
-            document.getElementById('out').innerText = data.result;
+            output.innerText = data.result;
         }
     </script>
 </body>
@@ -49,12 +59,9 @@ PAGE_HTML = """
 """
 
 @app.get("/")
-async def read_root():
-    return Response(content=PAGE_HTML, media_type="text/html")
-
 @app.get("/app")
-async def read_app():
-    return Response(content=PAGE_HTML, media_type="text/html")
+async def serve_ui():
+    return Response(content=UI_HTML, media_type="text/html")
 
 class RequestData(BaseModel):
     text: str
