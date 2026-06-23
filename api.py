@@ -94,10 +94,13 @@ class RequestData(BaseModel):
     text: str
 
 @app.post("/explain")
-def explain_text(data: RequestData):
-    # Simulated analysis delay
-    result = process_concept(data.text)
-    return {"result": result}
+async def explain_text(data: RequestData):
+    try:
+        # We ensure this runs the process correctly
+        result = process_concept(data.text)
+        return {"result": result}
+    except Exception as e:
+        return {"result": f"ERROR: Engine failure - {str(e)}"}
 
 if __name__ == "__main__":
     import os
