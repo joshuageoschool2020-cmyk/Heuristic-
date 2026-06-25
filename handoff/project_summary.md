@@ -1,0 +1,2 @@
+# Project Summary: Heuristic Engine V3.1
+"The Heuristic Engine V3.1 is a web-based application designed to analyze input sequences, calculate a dynamic confidence score, and generate a structural optimization report for strategic technical assessment.
