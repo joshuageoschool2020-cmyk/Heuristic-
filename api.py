@@ -178,6 +178,29 @@ UI_HTML = """<!DOCTYPE html>
     .tv.bad{color:var(--red)}
     .tsep{font-size:11px;color:var(--text-5)}
     @media(max-width:900px){.cmd-grid{grid-template-columns:1fr}.sidebar,.input-col{border-right:none;border-bottom:1px solid var(--border)}.stats{grid-template-columns:repeat(2,1fr)}}
+    .hist-panel{margin-top:14px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+    .hist-hd{background:var(--surface);padding:10px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .hist-hd-lbl{font-size:10px;color:var(--text-4);letter-spacing:.14em;text-transform:uppercase}
+    .hist-hd-right{display:flex;align-items:center;gap:14px}
+    .hist-count{font-size:10px;color:var(--text-3)}
+    .hist-clear{font-size:10px;color:var(--text-4);cursor:pointer;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border:1px solid var(--border);border-radius:3px;transition:color .15s,border-color .15s}
+    .hist-clear:hover{color:var(--red);border-color:rgba(255,84,112,.4)}
+    .hist-body{background:var(--terminal);max-height:220px;overflow-y:auto}
+    .hist-body::-webkit-scrollbar{width:4px}
+    .hist-body::-webkit-scrollbar-track{background:var(--terminal)}
+    .hist-body::-webkit-scrollbar-thumb{background:var(--border-lit);border-radius:2px}
+    .hist-empty{padding:18px;font-size:11px;color:var(--text-4);text-align:center;letter-spacing:.06em}
+    .hist-cols{display:grid;grid-template-columns:72px 68px 1fr 80px;gap:12px;align-items:center;padding:7px 18px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+    .hist-col-lbl{font-size:9px;color:var(--text-4);letter-spacing:.12em;text-transform:uppercase}
+    .hist-entry{display:grid;grid-template-columns:72px 68px 1fr 80px;gap:12px;align-items:center;padding:9px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+    .hist-entry:last-child{border-bottom:none}
+    .hist-entry:hover{background:rgba(95,87,255,.05)}
+    .hist-entry.active{background:rgba(95,87,255,.09);border-left:2px solid var(--brand)}
+    .hist-time{font-size:10px;color:var(--text-3);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+    .hist-badge{font-size:10px;color:var(--brand-soft);background:var(--brand-bg);border:1px solid rgba(95,87,255,.28);padding:2px 7px;border-radius:3px;text-align:center;letter-spacing:.04em}
+    .hist-snippet{font-size:11px;color:var(--text-3);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+    .hist-restore{font-size:10px;color:var(--text-4);letter-spacing:.1em;text-align:right;text-transform:uppercase;transition:color .15s}
+    .hist-entry:hover .hist-restore{color:var(--brand-soft)}
   </style>
 </head>
 <body>
@@ -288,6 +311,25 @@ UI_HTML = """<!DOCTYPE html>
       <span style="font-size:10px;color:var(--text-3)">NOMINAL</span>
     </div>
   </div>
+
+  <div class="hist-panel">
+    <div class="hist-hd">
+      <span class="hist-hd-lbl">Session History</span>
+      <div class="hist-hd-right">
+        <span class="hist-count" id="hist-count">0 sessions</span>
+        <span class="hist-clear" onclick="clearHistory()">Clear</span>
+      </div>
+    </div>
+    <div class="hist-cols">
+      <span class="hist-col-lbl">Time</span>
+      <span class="hist-col-lbl">Confidence</span>
+      <span class="hist-col-lbl">Input Sequence</span>
+      <span class="hist-col-lbl" style="text-align:right">Action</span>
+    </div>
+    <div class="hist-body" id="hist-body">
+      <div class="hist-empty">No sessions recorded yet &#8212; run your first analysis above</div>
+    </div>
+  </div>
 </main>
 <script>
   const CIRC=226.2;
@@ -360,6 +402,7 @@ UI_HTML = """<!DOCTYPE html>
         document.getElementById('t-srv').textContent='['+data.processing_time_ms+'ms]';
         document.getElementById('t-rtt').textContent='['+rtt+'ms]';
         totalReq++;document.getElementById('rcount').textContent=totalReq;
+        addToHistory(input,data.result,data.confidence,data.processing_time_ms,rtt);
         btn.disabled=false;btn.textContent='INITIALIZE_ANALYSIS';busy=false;
       });
     }catch(e){
@@ -372,6 +415,61 @@ UI_HTML = """<!DOCTYPE html>
     }
   }
   document.getElementById('inp').addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter')run()});
+
+  const sessions=[];
+  let activeId=null;
+
+  function addToHistory(input,output,confidence,serverTime,rtt){
+    const now=new Date();
+    const time=pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+    sessions.unshift({id:Date.now(),time,confidence,serverTime,rtt,
+      snippet:input.length>70?input.slice(0,70)+'\u2026':input,
+      input,output});
+    if(sessions.length>25)sessions.pop();
+    renderHistory();
+  }
+
+  function renderHistory(){
+    const body=document.getElementById('hist-body');
+    const count=document.getElementById('hist-count');
+    count.textContent=sessions.length+' session'+(sessions.length!==1?'s':'');
+    if(sessions.length===0){
+      body.innerHTML='<div class="hist-empty">No sessions recorded yet \u2014 run your first analysis above</div>';
+      return;
+    }
+    body.innerHTML=sessions.map(s=>`
+      <div class="hist-entry${activeId===s.id?' active':''}" onclick="restore(${s.id})">
+        <div class="hist-time">${s.time}</div>
+        <div class="hist-badge">${s.confidence}%</div>
+        <div class="hist-snippet">${s.snippet}</div>
+        <div class="hist-restore">\u21a9 Restore</div>
+      </div>`).join('');
+  }
+
+  function restore(id){
+    const s=sessions.find(x=>x.id===id);
+    if(!s)return;
+    activeId=id;
+    document.getElementById('inp').value=s.input;
+    const outEl=document.getElementById('out');
+    outEl.textContent=s.output;outEl.className='done';
+    setRing(s.confidence);
+    setTag('RESTORED','var(--brand-soft)');
+    document.getElementById('m-st').textContent='RESTORED';document.getElementById('m-st').style.color='var(--brand-soft)';
+    const mv=document.getElementById('m-val');mv.textContent='\u2713 YES';mv.className='meta-v ok';
+    document.getElementById('m-srv').textContent=s.serverTime+'ms';
+    document.getElementById('t-conf').textContent='['+s.confidence+'%]';document.getElementById('t-conf').className='tv ok';
+    document.getElementById('t-srv').textContent='['+s.serverTime+'ms]';
+    document.getElementById('t-rtt').textContent='['+s.rtt+'ms]';
+    document.getElementById('t-st').textContent='RESTORED';document.getElementById('t-st').className='tv';
+    document.getElementById('t-st').style.color='var(--brand-soft)';
+    document.getElementById('err').className='err-box';
+    renderHistory();
+  }
+
+  function clearHistory(){
+    sessions.length=0;activeId=null;renderHistory();
+  }
 </script>
 </body>
 </html>"""
