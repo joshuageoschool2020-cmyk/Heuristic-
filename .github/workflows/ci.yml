@@ -21,7 +21,6 @@ jobs:
           nohup python main.py > server.log 2>&1 &
 
       - name: Run tests
-       - name: Run tests
         env:
           TEST_SERVER_URL: http://127.0.0.1:10000/
           TEST_SERVER_TIMEOUT: 120
