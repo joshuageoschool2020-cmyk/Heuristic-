@@ -1,10 +1,25 @@
-- name: Install dependencies
-      run: pip install -r requirements.txt
+name: CI
 
-    - name: Run core tests
-      run: pytest tests/test_core.py -v -m "not integration"
+on: [push]
 
-    - name: Run performance tests
-      run: pytest tests/test_performance.py -v -m "not integration"
-      env:
-        INFERENCE_TIMEOUT_S: "90"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run core tests
+        run: pytest tests/test_core.py -v -m "not integration"
+
+      - name: Run performance tests
+        run: pytest tests/test_performance.py -v -m "not integration"
+        env:
+          INFERENCE_TIMEOUT_S: "90"
