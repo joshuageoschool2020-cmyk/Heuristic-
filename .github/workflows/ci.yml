@@ -16,14 +16,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Start server in background
-  run: |
-    python main.py &
+      - name: Start application in background
+        run: |
+          nohup python main.py > server.log 2>&1 &
 
-- name: Run core tests
-  run: pytest tests/test_core.py -v -m "not integration"
-
-- name: Run performance tests
-  run: pytest tests/test_performance.py -v -m "not integration"
-  env:
-    INFERENCE_TIMEOUT_S: "90"
+      - name: Run tests
+        env:
+          TEST_SERVER_URL: http://127.0.0.1:10000/
+          TEST_SERVER_TIMEOUT: 120
+          INFERENCE_TIMEOUT_S: "90"
+        run: pytest -q
