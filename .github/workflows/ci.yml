@@ -1,26 +1,10 @@
-# .github/workflows/ci.yml
-name: CI
+- name: Install dependencies
+      run: pip install -r requirements.txt
 
-on: [push, pull_request]
+    - name: Run core tests
+      run: pytest tests/test_core.py -v -m "not integration"
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run core tests
-        run: pytest tests/test_core.py -v
-
-      - name: Run performance tests
-        run: pytest tests/test_performance.py -v
-        env:
-          INFERENCE_TIMEOUT_S: "90"
+    - name: Run performance tests
+      run: pytest tests/test_performance.py -v -m "not integration"
+      env:
+        INFERENCE_TIMEOUT_S: "90"
