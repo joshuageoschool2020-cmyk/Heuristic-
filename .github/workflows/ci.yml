@@ -16,13 +16,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Installs your project in editable mode with test dependencies
-          pip install -e .[test]
+          # Installing testing tools directly to avoid package metadata errors
+          pip install pytest pytest-cov
 
       - name: Run core tests
         run: |
           pytest tests/test_core.py -v --tb=short
         env:
+          # This keeps the current directory in the path so imports work
           PYTHONPATH: ${{ github.workspace }}
 
       - name: Run non-integration tests
