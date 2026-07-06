@@ -1,64 +1,32 @@
-# .github/workflows/ci.yml
-# Universal CI pipeline for Heuristic OS
-# Handles all four causes of ModuleNotFoundError in Python CI
-
 name: CI
 
-on:
-  push:
-    branches: [main, staging]
-  pull_request:
-    branches: [main, staging]
+on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    # Working directory set ONCE here — every subsequent step runs from here.
-    # This is safer than relying on PYTHONPATH: . because it removes ambiguity
-    # about what "." actually points to when each step runs.
-    defaults:
-      run:
-        working-directory: .
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
-          cache: "pip"            # caches pip downloads between runs
+          python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          # Installs your project in editable mode with test dependencies
+          pip install -e .[test]
 
-      # Install the project itself as an editable package.
-      # This is the single most reliable fix for ModuleNotFoundError —
-      # it puts your project on sys.path permanently for the entire job,
-      # regardless of working directory, subprocess spawning, or PYTHONPATH.
-      # Requires a pyproject.toml (see below).
-      - name: Install project (editable)
-        run: pip install -e .
-
-      # Core tests — run without Ollama (uses the fallback stub in brain.py)
       - name: Run core tests
-        run: pytest tests/test_core.py -v --tb=short
-        env:
-          PYTHONPATH: ${{ github.workspace }}   # explicit absolute path, not "."
-
-      # Integration tests — skip in CI since Ollama isn't available.
-      # Run these locally or on a self-hosted runner with Ollama installed.
-      # Mark tests with @pytest.mark.integration to use this split.
-      - name: Run non-integration tests
-        run: pytest tests/ -v --tb=short -m "not integration"
+        run: |
+          pytest tests/test_core.py -v --tb=short
         env:
           PYTHONPATH: ${{ github.workspace }}
-          INFERENCE_TIMEOUT_S: "90"
 
-      # Optional: type check — catches contract drift between brain.py and api.py
-      # before it reaches production (the exact bug that caused your KeyError).
-      # Remove if you haven't set up type hints yet.
-      # - name: Type check
-      #   run: mypy api.py brain.py --ignore-missing-imports
+      - name: Run non-integration tests
+        run: |
+          pytest tests/ -v --tb=short -m "not integration"
+        env:
+          PYTHONPATH: ${{ github.workspace }}
