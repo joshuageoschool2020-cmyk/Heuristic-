@@ -16,18 +16,32 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Installing testing tools directly to avoid package metadata errors
-          pip install pytest pytest-cov requests 
+          pip install -r requirements.txt
+          pip install pytest pytest-cov requests
 
-      - name: Run core tests
+      - name: Run tests with server
         run: |
+          # Start API server in background
+          python api.py &
+          SERVER_PID=$!
+          
+          # Wait for server to be ready
+          for i in {1..30}; do
+            if curl -s http://localhost:10000/health > /dev/null 2>&1; then
+              echo "Server is ready"
+              break
+            fi
+            echo "Waiting for server... ($i)"
+            sleep 1
+          done
+          
+          # Run core tests
           pytest tests/test_core.py -v --tb=short
-        env:
-          # This keeps the current directory in the path so imports work
-          PYTHONPATH: ${{ github.workspace }}
-
-      - name: Run non-integration tests
-        run: |
+          
+          # Run non-integration tests
           pytest tests/ -v --tb=short -m "not integration"
+          
+          # Cleanup
+          kill $SERVER_PID 2>/dev/null || true
         env:
           PYTHONPATH: ${{ github.workspace }}

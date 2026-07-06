@@ -5,9 +5,10 @@ import pytest
 BASE_URL = "http://127.0.0.1:10000"
 
 def test_health_endpoint():
-    # Verify the root endpoint is alive
-    response = requests.get(f"{BASE_URL}/")
+    # Verify the health endpoint is alive
+    response = requests.get(f"{BASE_URL}/health")
     assert response.status_code == 200
+    assert response.json().get("status") == "ok"
 
 def test_basic_request_returns_valid_schema():
     # 1. Define payload and submit the task
@@ -17,7 +18,7 @@ def test_basic_request_returns_valid_schema():
     
     task_id = response.json()["task_id"]
 
-    # 2. Poll the status endpoint until it's 'completed'
+    # 2. Poll the status endpoint until it's 'complete'
     data = {}
     for _ in range(60):
         status_response = requests.get(f"{BASE_URL}/tasks/{task_id}")
